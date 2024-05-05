@@ -20,7 +20,7 @@ export const registerSlice = createSlice({
             state = current(state)
             let newState = { ...state }
             let { name, value } = action.payload
-            if(name == "phoneNumber"){value = Number(value)}
+            if(name === "phoneNumber"){value = Number(value)}
             const updatedValues = { ...newState.values, [name] : value , errors:[]  }
             registerControl(updatedValues)
             return {
