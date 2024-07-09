@@ -1,19 +1,28 @@
 import express from 'express'
 import dotenv from "dotenv"
 import dbConnection from './database/dbConnection.js'
-import routes from './routes/routes.js'
 import { accessMiddleware } from './middleware/accessMiddleware.js'
+import adminRouter from './routes/adminRoute/adminRoute.js'
+import publicRouter from './routes/publicRoute/publicRoute.js'
+const app = express()
 
 dotenv.config()
 //Database Connection
 dbConnection()
-const app = express()
+
 
 // JSON bady parsing middleware
 app.use(express.json());
+
+// PUBLIC API
+app.use("/api/public",publicRouter)
+
 // Access Middleware
 app.use(accessMiddleware)
-app.use("/",routes)
+
+// PRIVATE API
+app.use("/api/admin",adminRouter)
+
 app.get('/',(req,res) => {
     res.json({
         "message":"Hello World"
@@ -21,5 +30,5 @@ app.get('/',(req,res) => {
 })
 
 app.listen(process.env.PORT,() => {
-    console.log("uygulama Calisiyor.")
+    console.log('uygulama suanda ',process.env.PORT,' portunda calisiyor')
 })

@@ -2,9 +2,7 @@ import mongoose from "mongoose";
 
 const dbConnection = () => {
     mongoose.connect(process.env.DB_URL, {
-        dbName:"barberDatabase",
-        useNewUrlParser: true,
-        useUnifiedTopology: true
+        dbName:"barberDatabase"
     }).then(() => {
         console.log("Connected to DB successfully")
     }).catch((err) => {

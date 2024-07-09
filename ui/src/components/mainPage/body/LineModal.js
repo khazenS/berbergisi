@@ -23,17 +23,21 @@ const style = {
 
 export default function LineModal() {
   const [open, setOpen] = React.useState(false);
+  const dispatch = useDispatch()
+
+  
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
+    dispatch(setRegisterState({'nameType':'name','value':''}))
+    dispatch(setRegisterState({'nameType':'phoneNumber','value':''}))
     setOpen(false)
-    dispatch(setRegisterState('name',''))
   };
 
-  const dispatch = useDispatch()
-  const state = useSelector(state => state.register.values)
   const onInpF = (name,value)=>{
-    dispatch(setRegisterState({name,value}))
+    dispatch(setRegisterState({'nameType':name,'value':value}))
   }
+
+  const state = useSelector(state => state.register.values)
   console.log(state)
 
   return (
@@ -59,8 +63,14 @@ export default function LineModal() {
         <Box sx={style}>
           <Box>
             <Fab color="error" size="small" onClick={handleClose} sx={{ marginLeft: "auto", display: "flex" }}><CloseIcon /></Fab>
-            <TextField onChange={(e) =>{onInpF('name',e.target.value)}} error={state.errors.indexOf("nameRequired") !== -1} helperText={state.errors.indexOf("nameRequired") !== -1?"Lütfen tam isminizi giriniz.":""} label="İsminiz" variant="outlined" inputProps={{ maxLength: 20 }} InputLabelProps={{shrink: true}} sx={{display:'flex' , m:2}}/>
-            <TextField onChange={(e) =>{onInpF('phoneNumber',e.target.value)}} error={state.errors.indexOf("wrongNumber") !== -1} helperText={state.errors.indexOf("wrongNumber") !== -1?"Lütfen numaranızı eksiksiz giriniz.":""}  type="number" InputLabelProps={{shrink: true}} label="Telefon Numaranız" variant="outlined"   sx={{display:'flex',m:2}} InputProps={{startAdornment: (<InputAdornment position="start">+90</InputAdornment>),}}/>
+            <TextField onChange={(e) =>{onInpF('name',e.target.value)}} 
+            error={state.errors.indexOf("nameRequired") !== -1} helperText={state.errors.indexOf("nameRequired") !== -1?"Lütfen tam isminizi giriniz.":""} 
+            label="İsminiz" variant="outlined" inputProps={{ maxLength: 20 }} InputLabelProps={{shrink: true}} sx={{display:'flex' , m:2}}/>
+
+            <TextField onChange={(e) =>{onInpF('phoneNumber',e.target.value)}} 
+            error={state.errors.indexOf("wrongNumber") !== -1} helperText={state.errors.indexOf("wrongNumber") !== -1?"Lütfen numaranızı eksiksiz giriniz.":""}  
+            type="number" InputLabelProps={{shrink: true}} label="Telefon Numaranız" variant="outlined"   
+            sx={{display:'flex',m:2}} InputProps={{startAdornment: (<InputAdornment position="start">+90</InputAdornment>),}}/>
             
             <Box sx={{margin:2}}>
             <FormLabel >Traş</FormLabel>

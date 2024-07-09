@@ -1,6 +1,6 @@
 import { Avatar, Container, Grid, Typography } from "@mui/material"
 import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import Modal from "./LineModal.js";
+import LineModal from "./LineModal.js";
 
 function InfoBoxes(){
     return (
@@ -26,7 +26,7 @@ function InfoBoxes(){
                 </Grid>
             </Grid>
 
-            <Modal></Modal>
+            <LineModal></LineModal>
             
         </div>
 

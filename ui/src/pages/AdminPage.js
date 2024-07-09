@@ -1,7 +1,9 @@
 import Container from '@mui/material/Container'
 function AdminPage(){
     return (
-        <Container>Admin Page</Container>
+        <Container>
+            <Button variant="outlined">Dukkan Ac Kapa</Button>
+        </Container>
     )
 }
 

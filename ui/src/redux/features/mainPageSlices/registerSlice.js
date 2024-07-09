@@ -1,6 +1,6 @@
-import { createSlice, current } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import registerControl from "../../../helpers/registerControl.js";
-
+import axios from 'axios'
 let initialState = {
     values:{
         name:"",
@@ -12,6 +12,11 @@ let initialState = {
 
 }
 
+export const registerUser = createAsyncThunk('registerUser', async ()=>{
+    const response = axios.post()
+})
+
+
 export const registerSlice = createSlice({
     name:'registerSlice',
     initialState,
@@ -19,10 +24,10 @@ export const registerSlice = createSlice({
         setRegisterState: (state,action) => {
             state = current(state)
             let newState = { ...state }
-            let { name, value } = action.payload
+            let name = action.payload.nameType
+            let value = action.payload.value
             if(name === "phoneNumber"){value = Number(value)}
             const updatedValues = { ...newState.values, [name] : value , errors:[]  }
-            registerControl(updatedValues)
             return {
                 ...newState,
                 values:{
