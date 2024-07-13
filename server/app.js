@@ -4,12 +4,14 @@ import dbConnection from './database/dbConnection.js'
 import { accessMiddleware } from './middleware/accessMiddleware.js'
 import adminRouter from './routes/adminRoute/adminRoute.js'
 import publicRouter from './routes/publicRoute/publicRoute.js'
+import cors from 'cors'
 const app = express()
 
 dotenv.config()
 //Database Connection
 dbConnection()
-
+// CORS middleware
+app.use(cors())
 
 // JSON bady parsing middleware
 app.use(express.json());

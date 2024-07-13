@@ -1,9 +1,12 @@
-import Container from '@mui/material/Container'
+import AdminFirstPart from "../components/adminPage/AdminFirstPart.js"
+
+
 function AdminPage(){
+
     return (
-        <Container>
-            <Button variant="outlined">Dukkan Ac Kapa</Button>
-        </Container>
+        <div>
+            <AdminFirstPart></AdminFirstPart>       
+        </div>
     )
 }
 

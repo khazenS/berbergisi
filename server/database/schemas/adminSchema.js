@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-const { Schema } = mongoose;
 
-export const adminSchema = new Schema({
+const adminSchema = new mongoose.Schema({
     username:String,
     password:String,
     adminAccessToken:String
 })
 
+export const Admin = mongoose.model('Admin',adminSchema,'admin')

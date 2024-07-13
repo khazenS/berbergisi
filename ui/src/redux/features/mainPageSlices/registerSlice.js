@@ -7,13 +7,13 @@ let initialState = {
         phoneNumber:"",
         cutValue:"cut",
         comingWithValue:"one",
-        errors:[],
+        errors:[]
     }
-
 }
 
 export const registerUser = createAsyncThunk('registerUser', async ()=>{
-    const response = axios.post()
+    const response = await axios.get('http://localhost:3001/api/public')
+    return response.data
 })
 
 
@@ -49,6 +49,15 @@ export const registerSlice = createSlice({
                 }
             }
         }
+    },
+    extraReducers: (builder) => {
+        builder.addCase(registerUser.pending, (state,action)=>{
+            state.isLoading=true
+        })
+        builder.addCase(registerUser.fulfilled, (state,action)=>{
+            state.isLoading=false
+            state.data = action.payload
+        })
     }
 })
 

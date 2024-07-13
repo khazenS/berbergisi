@@ -6,7 +6,8 @@ import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdorn
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { controlForFetch, setRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { controlForFetch, registerUser, setRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import InfoBoxes from "./InfoBoxes.js";
 
 const style = {
   position: "absolute",
@@ -23,22 +24,25 @@ const style = {
 
 export default function LineModal() {
   const [open, setOpen] = React.useState(false);
+  //registerSlice state
+  const state = useSelector(state => state.register.values)
+  
   const dispatch = useDispatch()
 
-  
+  //Fonctions for model process
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     dispatch(setRegisterState({'nameType':'name','value':''}))
     dispatch(setRegisterState({'nameType':'phoneNumber','value':''}))
     setOpen(false)
   };
-
   const onInpF = (name,value)=>{
     dispatch(setRegisterState({'nameType':name,'value':value}))
   }
+  const submitFunc = () =>{
+    dispatch(controlForFetch())
+  }
 
-  const state = useSelector(state => state.register.values)
-  console.log(state)
 
   return (
     <Container>
@@ -92,7 +96,7 @@ export default function LineModal() {
               </RadioGroup>               
             </Box>
 
-            <Button variant="contained" onClick={() => {dispatch(controlForFetch())}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
+            <Button variant="contained" onClick={()=>{submitFunc()}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
 
           </Box>
         </Box>

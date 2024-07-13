@@ -1,5 +1,4 @@
-import mongoose from "mongoose"
-import {adminSchema} from "../database/schemas/adminSchema.js"
+import {Admin} from "../database/schemas/adminSchema.js"
 import { verificationToken } from "../helpers/jwtProcesses.js"
 
 
@@ -7,7 +6,6 @@ import { verificationToken } from "../helpers/jwtProcesses.js"
 export const accessMiddleware = async (req,res,next) => {
     const headerToken = req.headers['authorization'].split(" ")[1]
 
-    const Admin = mongoose.model('Admin',adminSchema)
     const adminDoc = await Admin.find({})
     
     if(verificationToken(headerToken) && adminDoc[0].adminAccessToken == headerToken){
