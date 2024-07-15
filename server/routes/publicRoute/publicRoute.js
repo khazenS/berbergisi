@@ -15,7 +15,7 @@ publicRouter.get('/adminLogin',(req,res)=>{
 publicRouter.get('/shopStatus',async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
     if(!shop){
-        new Shop({
+        await new Shop({
             shopStatus:false,
             cutPrice:200,
             cutBPrice:250,
@@ -28,7 +28,7 @@ publicRouter.get('/shopStatus',async (req,res)=>{
     }else{
         res.json({
             status:true,
-            shopStatus:shop.shopStatus
+            shopStatus: shop.shopStatus
         })
     }
 

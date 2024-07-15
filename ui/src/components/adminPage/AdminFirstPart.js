@@ -1,7 +1,7 @@
 import { Container, Grid, Button, Typography } from '@mui/material';
 import {useDispatch,useSelector} from 'react-redux'
 import {useEffect} from 'react'
-import { changeStatus, defineStatus } from "../../redux/features/adminPageSlices/shopStatusSlice";
+import { changeStatus, changeStatusReducer, defineStatus } from "../../redux/features/adminPageSlices/shopStatusSlice";
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -14,11 +14,20 @@ export default function AdminFirstPart(){
     useEffect(()=>{
         dispatch(defineStatus())
     },[dispatch])
+
+    useEffect(()=>{
+        console.log("değişen dayta: ",shopStatusState.status)
+    },[shopStatusState.status])
     
-
-
+    //Button Click Fucntion
+    const changeProcessFunc = (status) => {
+        return () => {
+            dispatch(changeStatus(status));
+            dispatch(changeStatusReducer(status));
+        };
+    };
+    
     if(shopStatusState.defineRequest.isLoading === true || shopStatusState.defineRequest.isLoading === null){
-        console.log('burda')
         return(
             <Box sx={{display: 'flex',justifyContent: 'center',alignItems: 'center',height: '50vh', }}>
                 <CircularProgress />
@@ -44,7 +53,7 @@ export default function AdminFirstPart(){
                 sx={{display: 'flex',height: '10vh',}}>
                 <Grid container spacing={2} >
                     <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Button variant="contained" color='success' onClick={()=>{dispatch(changeStatus(shopStatusState.status))}}>Dükkanı {shopStatusState.status === true ? 'kapat' : 'aç'}</Button>
+                    <Button variant="contained" color='success' onClick={changeProcessFunc(shopStatusState.status)}>Dükkanı {shopStatusState.status === true ? 'kapat' : 'aç'}</Button>
                   </Grid>
                   <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <Typography variant="h6">Dükkan şuanda {shopStatusState.status === true ? 'açık' : 'kapalı'}</Typography>

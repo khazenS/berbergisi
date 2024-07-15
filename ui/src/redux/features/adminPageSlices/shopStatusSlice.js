@@ -1,5 +1,5 @@
 // This is for shop is open or close 
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, current} from "@reduxjs/toolkit";
 import axios from "axios";
 let initialState = {
     status:null,
@@ -16,7 +16,7 @@ let initialState = {
 
 export const changeStatus = createAsyncThunk('changeStatus',async (statusData,adminAccessToken)=>{
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIwNjgzNjMyLCJleHAiOjE3MjEyODg0MzJ9.0LOPDbwM1yXxR1CFP3VnN63DzsrB79CaVQTbkmCUWBY'
-    const response = await axios.post('http://localhost:3001/api/admin/change-status',statusData,{headers:{'Authorization': `Bearer ${token}`}})
+    const response = await axios.post('http://localhost:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
@@ -29,6 +29,17 @@ export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
 export const shopStatusSlice = createSlice({
     name:'shopStatusSlice',
     initialState,
+    reducers:{
+        changeStatusReducer: (state)=>{
+            state = current(state)
+            let newState = { ...state }
+            let newStatus = state.status === true ? false : true
+            return {
+                ...newState, 
+                ['status'] : newStatus
+            }
+        }
+    },
     extraReducers: (builder) =>{
         //defineStatus processes
         builder.addCase(defineStatus.pending, (state)=>{
@@ -50,8 +61,10 @@ export const shopStatusSlice = createSlice({
         })
         builder.addCase(changeStatus.fulfilled, (state,action)=>{
             //change process
-            if(state.status === true){state.status = false}
-            else{state.status = true}
+            // console.log("before process: ",state.status)
+            // if(state.status === true){state.status = false}
+            // else{state.status = true}
+            // console.log("after process: ",state.status)
             state.changeRequest.isLoading =false
         })
         builder.addCase(changeStatus.rejected,(state)=>{
@@ -61,4 +74,5 @@ export const shopStatusSlice = createSlice({
     }
 })
 
+export const {changeStatusReducer} = shopStatusSlice.actions
 export default shopStatusSlice.reducer
