@@ -6,27 +6,32 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
+import {socket} from "../../helpers/socketio.js";
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminFirstPart(){
     const dispatch = useDispatch()
     const shopStatusState = useSelector(state => state.shopStatus)
-
+    const navigate = useNavigate()
+    // defining the first value of shopStatusState.status
     useEffect(()=>{
         dispatch(defineStatus())
     },[dispatch])
 
-    useEffect(()=>{
-        console.log("değişen dayta: ",shopStatusState.status)
-    },[shopStatusState.status])
-    
     //Button Click Fucntion
     const changeProcessFunc = (status) => {
-        return () => {
-            dispatch(changeStatus(status));
-            dispatch(changeStatusReducer(status));
-        };
+        if(shopStatusState.expiredError === true){
+            navigate('/adminLogin')
+        }else{
+            socket.emit('changeStatus',status)
+            return () => {
+                dispatch(changeStatus(status))
+                dispatch(changeStatusReducer(status))
+            }            
+        }
+
     };
-    
+
     if(shopStatusState.defineRequest.isLoading === true || shopStatusState.defineRequest.isLoading === null){
         return(
             <Box sx={{display: 'flex',justifyContent: 'center',alignItems: 'center',height: '50vh', }}>

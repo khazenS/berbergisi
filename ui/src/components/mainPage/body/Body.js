@@ -1,28 +1,37 @@
-import { useEffect } from "react";
-import LineTable from "./LineTable.js";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { defineStatus } from "../../../redux/features/adminPageSlices/shopStatusSlice";
-import InfoBoxes from "./InfoBoxes.js";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import {socket} from "../../../helpers/socketio.js";
+import CloseShop from "./CloseShop.js";
+import QueueInformation from "./QueueInformation.js";
 
 function Body() {
   const dispatch = useDispatch();
   const shopStatusState = useSelector((state) => state.shopStatus);
-  const firstPageState = useSelector(state => state.shopStatus.status);
-  const secondPageState = useSelector(state => state.shopStatus.status);
+  const [changedStatus,setStatus] = useState(null)
+
+  //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
     dispatch(defineStatus());
-  }, [dispatch]);
+    setStatus(shopStatusState.status)
+  }, [dispatch,shopStatusState.status]);
 
-  useEffect(() => {
-    console.log("değişti: ",firstPageState)
-  }, [firstPageState]);
+  // We listen 'changedStatus' socket and set value to changedStatus state
+  useEffect(()=>{
+    socket.on('changedStatus',(status) => {
+      setStatus(status)
+    })
 
+    return () => {
+      socket.off('changedStatus')
+    }
+  },[])
 
-  if (shopStatusState.defineRequest.isLoading === true || shopStatusState.defineRequest.isLoading === null) {
+  if (shopStatusState.defineRequest.isLoading === true || shopStatusState.status === null) {
     return (
       <Box
         sx={{
@@ -35,7 +44,7 @@ function Body() {
         <CircularProgress />
       </Box>
     );
-  } else if (shopStatusState.defineRequest.error)
+  } else if (shopStatusState.defineRequest.error) {
     return (
       <div>
         <Stack
@@ -50,17 +59,17 @@ function Body() {
           </Alert>
         </Stack>
       </div>
-    );
+    );    
+  }
   else {
     return (
       <div>
-        {shopStatusState.status ? (
+        {changedStatus ? (
           <>
-            <InfoBoxes />
-            <LineTable />
+            <QueueInformation></QueueInformation>
           </>
         ) : (
-          <div>Kapali</div>
+          <CloseShop></CloseShop>
         )}
       </div>
     );

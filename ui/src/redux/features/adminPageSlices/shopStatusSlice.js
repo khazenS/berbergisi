@@ -9,19 +9,26 @@ let initialState = {
     },    
     changeRequest:{
         isLoading:null,
-        error:false
-    }
+        error:false,
+    },
+    expiredError:false
     
 }
 
-export const changeStatus = createAsyncThunk('changeStatus',async (statusData,adminAccessToken)=>{
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIwNjgzNjMyLCJleHAiOjE3MjEyODg0MzJ9.0LOPDbwM1yXxR1CFP3VnN63DzsrB79CaVQTbkmCUWBY'
-    const response = await axios.post('http://localhost:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
+export const controlAdminAccessToken = createAsyncThunk('controlAdminAccessToken',async () => {
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
+    const response = await axios.get('http://192.168.1.47:3001/api/admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
+    return response.data
+})
+
+export const changeStatus = createAsyncThunk('changeStatus',async (statusData)=>{
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
+    const response = await axios.post('http://192.168.1.47:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
-    const response = await axios.get('http://localhost:3001/api/public/shopStatus')
+    const response = await axios.get('http://192.168.1.47:3001/api/public/shopStatus')
     return response.data
 })
 
@@ -36,7 +43,7 @@ export const shopStatusSlice = createSlice({
             let newStatus = state.status === true ? false : true
             return {
                 ...newState, 
-                ['status'] : newStatus
+                'status' : newStatus
             }
         }
     },
@@ -56,20 +63,30 @@ export const shopStatusSlice = createSlice({
         })
         //changeStatus processes
         builder.addCase(changeStatus.pending, (state)=>{
+            state.changeRequest.expiredError = false
             state.changeRequest.isLoading = true
             state.changeRequest.error = false
         })
         builder.addCase(changeStatus.fulfilled, (state,action)=>{
-            //change process
-            // console.log("before process: ",state.status)
-            // if(state.status === true){state.status = false}
-            // else{state.status = true}
-            // console.log("after process: ",state.status)
+            if(action.payload.status === false){
+                state.expiredError = true
+            }
             state.changeRequest.isLoading =false
         })
         builder.addCase(changeStatus.rejected,(state)=>{
             state.changeRequest.error = true
             state.changeRequest.isLoading = false
+        })
+        // Token control processes 
+        builder.addCase(controlAdminAccessToken.pending, (state)=>{
+            state.expiredError = false
+            state.defineRequest.isLoading = true
+        })
+        builder.addCase(controlAdminAccessToken.fulfilled, (state,action)=>{
+            if(action.payload.status === false){
+                state.expiredError = true
+            }
+            state.defineRequest.isLoading =false
         })
     }
 })

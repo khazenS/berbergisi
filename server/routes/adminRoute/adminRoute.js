@@ -12,6 +12,13 @@ adminRouter.post('/change-status',async(req,res)=>{
     })
 })
 
+adminRouter.get('/controlAdminAccessToken',async(req,res)=>{
+    res.json({
+        status:true,
+        message:"Token is valid"
+    })
+})
+
 
 export default adminRouter;
 

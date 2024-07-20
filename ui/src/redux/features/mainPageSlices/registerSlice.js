@@ -12,7 +12,7 @@ let initialState = {
 }
 
 export const registerUser = createAsyncThunk('registerUser', async ()=>{
-    const response = await axios.get('http://localhost:3001/api/public')
+    const response = await axios.get('http://192.168.1.47:3001/api/public')
     return response.data
 })
 
@@ -21,7 +21,7 @@ export const registerSlice = createSlice({
     name:'registerSlice',
     initialState,
     reducers:{
-        setRegisterState: (state,action) => {
+        updateRegisterState: (state,action) => {
             state = current(state)
             let newState = { ...state }
             let name = action.payload.nameType
@@ -51,7 +51,7 @@ export const registerSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
-        builder.addCase(registerUser.pending, (state,action)=>{
+        builder.addCase(registerUser.pending, (state)=>{
             state.isLoading=true
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
@@ -61,6 +61,6 @@ export const registerSlice = createSlice({
     }
 })
 
-export const {setRegisterState,controlForFetch} = registerSlice.actions
+export const {updateRegisterState,controlForFetch} = registerSlice.actions
 
 export default registerSlice.reducer

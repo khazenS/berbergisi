@@ -2,6 +2,7 @@ import AdminPage from "./pages/AdminPage";
 import MainPage from "./pages/MainPage";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NoPage from "./pages/NoPage";
+import AdminEntryPage from "./pages/AdminEntryPage.js";
 
 import '@fontsource/kanit/300.css';
 import '@fontsource/kanit/400.css';
@@ -14,6 +15,7 @@ function App() {
       <Routes>
         <Route path="/">
           <Route index element={<MainPage />} />
+          <Route path="adminLogin" element={<AdminEntryPage/>}></Route>
           <Route path="admin" element={<AdminPage/>} />
           <Route path="*" element={<NoPage />} />
         </Route>

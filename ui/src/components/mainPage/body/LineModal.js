@@ -6,8 +6,7 @@ import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdorn
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { controlForFetch, registerUser, setRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
-import InfoBoxes from "./InfoBoxes.js";
+import { controlForFetch,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
 
 const style = {
   position: "absolute",
@@ -24,25 +23,28 @@ const style = {
 
 export default function LineModal() {
   const [open, setOpen] = React.useState(false);
+  const dispatch = useDispatch()
   //registerSlice state
   const state = useSelector(state => state.register.values)
-  
-  const dispatch = useDispatch()
 
   //Fonctions for model process
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
-    dispatch(setRegisterState({'nameType':'name','value':''}))
-    dispatch(setRegisterState({'nameType':'phoneNumber','value':''}))
+    dispatch(updateRegisterState({'nameType':'name','value':''}))
+    dispatch(updateRegisterState({'nameType':'phoneNumber','value':''}))
     setOpen(false)
   };
   const onInpF = (name,value)=>{
-    dispatch(setRegisterState({'nameType':name,'value':value}))
+    dispatch(updateRegisterState({'nameType':name,'value':value}))
   }
-  const submitFunc = () =>{
+  const handleSubmit = () =>{
     dispatch(controlForFetch())
+    console.log(state.errors)
   }
 
+  React.useEffect(()=>{
+    console.log(state)
+  },[state])
 
   return (
     <Container>
@@ -86,17 +88,17 @@ export default function LineModal() {
             </Box>
 
             <Box sx={{margin:2}}>
-            <FormLabel >Kaç kişisiniz</FormLabel>
+            <FormLabel>Kaç kişisiniz</FormLabel>
               <RadioGroup onChange={(e) =>{onInpF('comingWithValue',e.target.value)}} row defaultValue="one" name="radio-buttons-group">
-              <FormControlLabel value="one" control={<Radio />} label="Tekim" />
-              <FormControlLabel value="two" control={<Radio />} label="2" />
-              <FormControlLabel value="three" control={<Radio />} label="3" />
-              <FormControlLabel value="four" control={<Radio />} label="4" />
+              <FormControlLabel value="1" control={<Radio />} label="Tekim" />
+              <FormControlLabel value="2" control={<Radio />} label="2" />
+              <FormControlLabel value="3" control={<Radio />} label="3" />
+              <FormControlLabel value="4" control={<Radio />} label="4" />
               <FormHelperText>Bu sıralamada önemlidir.</FormHelperText>
               </RadioGroup>               
             </Box>
 
-            <Button variant="contained" onClick={()=>{submitFunc()}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
+            <Button variant="contained" onClick={()=>{handleSubmit()}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
 
           </Box>
         </Box>
