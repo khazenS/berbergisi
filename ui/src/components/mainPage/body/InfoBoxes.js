@@ -5,10 +5,8 @@ import LineModal from "./LineModal.js";
 
 function InfoBoxes(){
 
-
     return (
         <div>
-            <Typography>{String(status)}</Typography>
             <Grid container spacing={1} sx={{marginTop:3}}>
                 <Grid xs={6} item sx={{display:"flex",justifyContent:"center",alignItems:"center"}} >
                     <Avatar sx={{ bgcolor:"green" }}></Avatar>

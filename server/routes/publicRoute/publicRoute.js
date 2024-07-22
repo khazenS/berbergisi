@@ -34,4 +34,9 @@ publicRouter.get('/shopStatus',async (req,res)=>{
 
 })
 
+// User register 
+publicRouter.post('register-user', (req,res) => {
+    console.log(req.body)
+    
+})
 export default publicRouter

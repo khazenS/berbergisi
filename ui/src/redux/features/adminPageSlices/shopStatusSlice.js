@@ -17,18 +17,18 @@ let initialState = {
 
 export const controlAdminAccessToken = createAsyncThunk('controlAdminAccessToken',async () => {
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
-    const response = await axios.get('http://192.168.1.47:3001/api/admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
+    const response = await axios.get('http://localhost:3001/api/admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const changeStatus = createAsyncThunk('changeStatus',async (statusData)=>{
     const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
-    const response = await axios.post('http://192.168.1.47:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
+    const response = await axios.post('http://localhost:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
-    const response = await axios.get('http://192.168.1.47:3001/api/public/shopStatus')
+    const response = await axios.get('http://localhost:3001/api/public/shopStatus')
     return response.data
 })
 

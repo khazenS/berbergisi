@@ -1,19 +1,24 @@
 import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
 import registerControl from "../../../helpers/registerControl.js";
 import axios from 'axios'
+import { encryptData } from "../../../helpers/cryptoProcess.js";
 let initialState = {
     values:{
         name:"",
         phoneNumber:"",
         cutValue:"cut",
         comingWithValue:"one",
-        errors:[]
+        errors: []
     }
 }
 
-export const registerUser = createAsyncThunk('registerUser', async ()=>{
-    const response = await axios.get('http://192.168.1.47:3001/api/public')
+export const registerUser = createAsyncThunk('registerUser', async (state)=>{
+    const response = await axios.post('http://localhost:3001/api/public/register-user',{
+        type:'crypted',
+        data: encryptData(state)
+    })
     return response.data
+
 })
 
 
@@ -54,9 +59,8 @@ export const registerSlice = createSlice({
         builder.addCase(registerUser.pending, (state)=>{
             state.isLoading=true
         })
-        builder.addCase(registerUser.fulfilled, (state,action)=>{
+        builder.addCase(registerUser.fulfilled, (state)=>{
             state.isLoading=false
-            state.data = action.payload
         })
     }
 })

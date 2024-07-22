@@ -24,9 +24,10 @@ const style = {
 export default function LineModal() {
   const [open, setOpen] = React.useState(false);
   const dispatch = useDispatch()
+  // This is for setting errors for fetch data
+  const [submitClicked,setSubmitClicked] = React.useState(false)
   //registerSlice state
   const state = useSelector(state => state.register.values)
-
   //Fonctions for model process
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
@@ -37,14 +38,23 @@ export default function LineModal() {
   const onInpF = (name,value)=>{
     dispatch(updateRegisterState({'nameType':name,'value':value}))
   }
+  //submit process
   const handleSubmit = () =>{
+    setSubmitClicked(true)
     dispatch(controlForFetch())
-    console.log(state.errors)
   }
-
   React.useEffect(()=>{
-    console.log(state)
-  },[state])
+    if(submitClicked){
+      if(state.errors.length === 0){
+        console.log('submit for fetch')
+      }
+      else{
+        console.log('Errors: ',state.errors)
+      }
+    }
+    setSubmitClicked(false)
+  },[state.errors,submitClicked])
+
 
   return (
     <Container>
@@ -89,8 +99,8 @@ export default function LineModal() {
 
             <Box sx={{margin:2}}>
             <FormLabel>Kaç kişisiniz</FormLabel>
-              <RadioGroup onChange={(e) =>{onInpF('comingWithValue',e.target.value)}} row defaultValue="one" name="radio-buttons-group">
-              <FormControlLabel value="1" control={<Radio />} label="Tekim" />
+              <RadioGroup onChange={(e) =>{onInpF('comingWithValue',e.target.value)}} row defaultValue="1" name="radio-buttons-group">
+              <FormControlLabel value="1" control={<Radio />} label="Tekim"  />
               <FormControlLabel value="2" control={<Radio />} label="2" />
               <FormControlLabel value="3" control={<Radio />} label="3" />
               <FormControlLabel value="4" control={<Radio />} label="4" />

@@ -8,6 +8,7 @@ import cors from 'cors'
 import { createServer } from 'node:http';
 import {Server} from 'socket.io'
 import setupSocket from './helpers/socket.js'
+import { cryptoMiddleware } from './middleware/cryptoMiddleware.js'
 
 const app = express()
 // CORS middleware
@@ -16,7 +17,7 @@ app.use(cors())
 const server = createServer(app);
 export const io = new Server(server,{
     cors: {
-      origin: "http://192.168.1.47:3000", 
+      origin: "http://localhost:3000", 
       methods: ["GET", "POST"]
     },
     transports: ['websocket']
@@ -30,7 +31,8 @@ dbConnection()
 
 // JSON bady parsing middleware
 app.use(express.json());
-
+//Crypto Middleware
+app.use(cryptoMiddleware)
 // PUBLIC API
 app.use("/api/public",publicRouter)
 

@@ -1,6 +1,5 @@
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 
-
 const datas = [
     {id:1,name:"Enes",comingWith:2},
     {id:2,name:"Apo",comingWith:1},
