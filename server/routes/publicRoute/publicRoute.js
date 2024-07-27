@@ -1,6 +1,10 @@
 import express from 'express'
 import { getTokenforAdmin } from '../../helpers/jwtProcesses.js'
 import { Shop } from '../../database/schemas/shopSchema.js';
+import { User } from '../../database/schemas/userSchema.js';
+import { DayBooking } from '../../database/schemas/dayBookingSchema.js';
+import { encryptData } from '../../helpers/cryptoProcess.js';
+import { MonthBooking } from '../../database/schemas/monthBookingSchema.js';
 const publicRouter = express.Router()
 
 //Create a admin access token and send to ui 
@@ -35,8 +39,92 @@ publicRouter.get('/shopStatus',async (req,res)=>{
 })
 
 // User register 
-publicRouter.post('register-user', (req,res) => {
-    console.log(req.body)
+publicRouter.post('/register-user', async (req,res) => {
+    const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
+    const now = new Date();
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    console.log('local: ', localDate)   
+    if(!user){
+        const updatedUser = await new User({
+            name:req.body.data.name,
+            phoneNumber:req.body.data.phoneNumber,
+            existTime:localDate
+        }).save()
+        console.log('if blogu updated user: ', updatedUser)
+        res.json({
+            status:true,
+            queueToken:123,
+            user: updatedUser
+        })
+    }else{
+        user.name = req.body.data.name
+        const updatedUser = await user.save()
+        console.log('else blogu updated user: ', updatedUser)
+        res.json({
+            status:true,
+            queueToken:123,
+            user: updatedUser
+        })
+
+    }
+})
+
+publicRouter.get('/get-dailyBooking', async (req,res) => {
+
+    const now = new Date();
+    // It is giving difference between UTC time and local time in type of minute so now its logging -180 
+    const offset = now.getTimezoneOffset()
+    // Translating to local date
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
+    const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
+
+    // getting latest dayBooking data foor check is over or not
+    if(latestRecord === null || latestRecord.isClosed === true){
+        const newDayBooking = await new DayBooking({
+            existDayDate :  localDate
+        }).save()        
+        const currentMonthRecord = await MonthBooking.findOne({existMonthDate:monthDate})
+
+        // Checking current moonth exist or not then to save new day booking into it
+        if(currentMonthRecord){
+            currentMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await currentMonthRecord.save()
+        }        
+        else{
+            const newMonthRecord = await new MonthBooking({
+                existMonthDate: monthDate
+            })
+            newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await newMonthRecord.save()
+        }
+
+        res.json({
+            status:true,
+            dailyQue:encryptData(newDayBooking.usersBooking),
+            dayBookingID: encryptData(newDayBooking.dayBookingID)
+        })
+    }else{
+        res.json({
+            status: true,
+            dailyQue : encryptData(latestRecord.usersBooking),
+            dayBookingID: encryptData(latestRecord.dayBookingID)
+        })
+    }
     
 })
+
+
+publicRouter.get('/close-dailyBooking' , async (req,res) => {
+    const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
+    if(latestRecord.isClosed === false){
+        latestRecord.isClosed = true
+        await latestRecord.save()
+    }
+    res.json({
+        status:true
+    })
+})
+
 export default publicRouter

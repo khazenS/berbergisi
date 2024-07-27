@@ -1,7 +1,7 @@
 import { Container, Grid, Button, Typography } from '@mui/material';
 import {useDispatch,useSelector} from 'react-redux'
 import {useEffect} from 'react'
-import { changeStatus, changeStatusReducer, defineStatus } from "../../redux/features/adminPageSlices/shopStatusSlice";
+import { changeStatus, defineStatus } from "../../redux/features/adminPageSlices/shopStatusSlice";
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -26,7 +26,6 @@ export default function AdminFirstPart(){
             socket.emit('changeStatus',status)
             return () => {
                 dispatch(changeStatus(status))
-                dispatch(changeStatusReducer(status))
             }            
         }
 

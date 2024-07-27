@@ -6,7 +6,8 @@ import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdorn
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { controlForFetch,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { controlForFetch,registerUser,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { increaseQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 
 const style = {
   position: "absolute",
@@ -38,6 +39,7 @@ export default function LineModal() {
   const onInpF = (name,value)=>{
     dispatch(updateRegisterState({'nameType':name,'value':value}))
   }
+
   //submit process
   const handleSubmit = () =>{
     setSubmitClicked(true)
@@ -45,15 +47,12 @@ export default function LineModal() {
   }
   React.useEffect(()=>{
     if(submitClicked){
-      if(state.errors.length === 0){
-        console.log('submit for fetch')
-      }
-      else{
-        console.log('Errors: ',state.errors)
+      if(state.errors.length === 0 ){
+        dispatch(registerUser(state))
       }
     }
     setSubmitClicked(false)
-  },[state.errors,submitClicked])
+  },[state,submitClicked,dispatch])
 
 
   return (

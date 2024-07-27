@@ -3,7 +3,6 @@ import LineTable from "./LineTable"
 
 
 function QueueInformation(){
-
     return (
         <div>
             <InfoBoxes></InfoBoxes>

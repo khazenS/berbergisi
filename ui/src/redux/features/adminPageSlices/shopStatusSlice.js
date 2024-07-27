@@ -1,5 +1,5 @@
 // This is for shop is open or close 
-import { createAsyncThunk, createSlice, current} from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice} from "@reduxjs/toolkit";
 import axios from "axios";
 let initialState = {
     status:null,
@@ -16,19 +16,19 @@ let initialState = {
 }
 
 export const controlAdminAccessToken = createAsyncThunk('controlAdminAccessToken',async () => {
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
-    const response = await axios.get('http://localhost:3001/api/admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxODUyMjI3LCJleHAiOjE3MjI0NTcwMjd9.3YlepUruAIxQVNvxLB8xkcwkWfPO1-7Dhksrjgx0xUs'
+    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const changeStatus = createAsyncThunk('changeStatus',async (statusData)=>{
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxMjE0NjI0LCJleHAiOjE3MjE4MTk0MjR9.e5NnX7BTWEJuUwgqhW9M7c3zNl-4kKpZ0bsCsB30vm4'
-    const response = await axios.post('http://localhost:3001/api/admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxODUyMjI3LCJleHAiOjE3MjI0NTcwMjd9.3YlepUruAIxQVNvxLB8xkcwkWfPO1-7Dhksrjgx0xUs'
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
-    const response = await axios.get('http://localhost:3001/api/public/shopStatus')
+    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/shopStatus')
     return response.data
 })
 
@@ -36,17 +36,7 @@ export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
 export const shopStatusSlice = createSlice({
     name:'shopStatusSlice',
     initialState,
-    reducers:{
-        changeStatusReducer: (state)=>{
-            state = current(state)
-            let newState = { ...state }
-            let newStatus = state.status === true ? false : true
-            return {
-                ...newState, 
-                'status' : newStatus
-            }
-        }
-    },
+    reducers:{},
     extraReducers: (builder) =>{
         //defineStatus processes
         builder.addCase(defineStatus.pending, (state)=>{
@@ -61,6 +51,7 @@ export const shopStatusSlice = createSlice({
             state.defineRequest.error = true
             state.defineRequest.isLoading = false
         })
+
         //changeStatus processes
         builder.addCase(changeStatus.pending, (state)=>{
             state.changeRequest.expiredError = false
@@ -68,6 +59,7 @@ export const shopStatusSlice = createSlice({
             state.changeRequest.error = false
         })
         builder.addCase(changeStatus.fulfilled, (state,action)=>{
+            state.status = action.payload.newStatus
             if(action.payload.status === false){
                 state.expiredError = true
             }
@@ -77,13 +69,14 @@ export const shopStatusSlice = createSlice({
             state.changeRequest.error = true
             state.changeRequest.isLoading = false
         })
+
         // Token control processes 
         builder.addCase(controlAdminAccessToken.pending, (state)=>{
             state.expiredError = false
             state.defineRequest.isLoading = true
         })
         builder.addCase(controlAdminAccessToken.fulfilled, (state,action)=>{
-            if(action.payload.status === false){
+            if(action.payload.status === false && action.payload.message === "Token is not valid or expired!"){
                 state.expiredError = true
             }
             state.defineRequest.isLoading =false
@@ -91,5 +84,4 @@ export const shopStatusSlice = createSlice({
     }
 })
 
-export const {changeStatusReducer} = shopStatusSlice.actions
 export default shopStatusSlice.reducer

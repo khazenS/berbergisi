@@ -7,59 +7,46 @@ let initialState = {
         name:"",
         phoneNumber:"",
         cutValue:"cut",
-        comingWithValue:"one",
+        comingWithValue:"",
         errors: []
     }
 }
 
-export const registerUser = createAsyncThunk('registerUser', async (state)=>{
-    const response = await axios.post('http://localhost:3001/api/public/register-user',{
+export const registerUser = createAsyncThunk('registerUser', async (values)=>{
+    const data = {
+        name : values.name,
+        phoneNumber : values.phoneNumber,
+        cutType:values.cutValue,
+        comingWithValue: values.comingWithValue
+    }   
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'public/register-user',{
         type:'crypted',
-        data: encryptData(state)
+        data: encryptData(data)
     })
     return response.data
 
 })
 
-
+// This is for new user register or updating exist user with name and returning token
 export const registerSlice = createSlice({
     name:'registerSlice',
     initialState,
     reducers:{
-        updateRegisterState: (state,action) => {
-            state = current(state)
-            let newState = { ...state }
-            let name = action.payload.nameType
-            let value = action.payload.value
-            if(name === "phoneNumber"){value = Number(value)}
-            const updatedValues = { ...newState.values, [name] : value , errors:[]  }
-            return {
-                ...newState,
-                values:{
-                    ...updatedValues
-                }
-            }
-        },
-        controlForFetch: (state) =>{
-            state = current(state)
-            let newState = { ...state }
-            let updatedValues = { ...state.values }
-            const newErrors = registerControl(updatedValues) 
-
-            return {
-                ...newState,
-                values:{
-                    ...updatedValues,
-                    errors:newErrors
-                }
-            }
-        }
+        updateRegisterState: (state, action) => {
+            const { nameType, value } = action.payload;
+            state.values[nameType] = (nameType === 'phoneNumber' || nameType === 'comingWithValue') ? Number(value) : value;
+            state.values.errors = []; // errors'u boş bir array olarak resetlemek için
+          },
+          controlForFetch: (state) => {
+            const newErrors = registerControl(state.values);
+            state.values.errors = newErrors;
+          }
     },
     extraReducers: (builder) => {
         builder.addCase(registerUser.pending, (state)=>{
             state.isLoading=true
         })
-        builder.addCase(registerUser.fulfilled, (state)=>{
+        builder.addCase(registerUser.fulfilled, (state,action)=>{
             state.isLoading=false
         })
     }
