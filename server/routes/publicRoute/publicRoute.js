@@ -1,10 +1,11 @@
 import express from 'express'
-import { getTokenforAdmin } from '../../helpers/jwtProcesses.js'
+import { getTokenforAdmin, getTokenforQue } from '../../helpers/jwtProcesses.js'
 import { Shop } from '../../database/schemas/shopSchema.js';
 import { User } from '../../database/schemas/userSchema.js';
 import { DayBooking } from '../../database/schemas/dayBookingSchema.js';
 import { encryptData } from '../../helpers/cryptoProcess.js';
 import { MonthBooking } from '../../database/schemas/monthBookingSchema.js';
+import { UserBooking } from '../../database/schemas/userBookingSchema.js';
 const publicRouter = express.Router()
 
 //Create a admin access token and send to ui 
@@ -15,6 +16,8 @@ publicRouter.get('/adminLogin',(req,res)=>{
         adminAccessToken:adminAccessToken
     })
 })
+
+
 //Learn the shop open or close
 publicRouter.get('/shopStatus',async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
@@ -43,35 +46,67 @@ publicRouter.post('/register-user', async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
     const now = new Date();
     const offset = now.getTimezoneOffset()
-    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
-    console.log('local: ', localDate)   
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))  
     if(!user){
+        // new user record
         const updatedUser = await new User({
             name:req.body.data.name,
             phoneNumber:req.body.data.phoneNumber,
             existTime:localDate
         }).save()
-        console.log('if blogu updated user: ', updatedUser)
+
+        //new user booking record
+        const bookingToken = getTokenforQue()
+        const newUserBooking = await new UserBooking({
+            userID:updatedUser.userID,
+            cutType:req.body.data.cutType,
+            comingWith:req.body.data.comingWithValue,
+            bookingToken:bookingToken,
+            registerTime:localDate
+
+        }).save()
+        console.log('if blogu updated user: ', newUserBooking)
         res.json({
             status:true,
-            queueToken:123,
-            user: updatedUser
+            queueToken:bookingToken,
+            userDatas: {
+                name:req.body.data.name,
+                cutType:req.body.data.cutType,
+                comingWith:req.body.data.comingWithValue
+            }
         })
     }else{
+        //update user
         user.name = req.body.data.name
         const updatedUser = await user.save()
-        console.log('else blogu updated user: ', updatedUser)
+
+        // new user booking
+        const bookingToken = getTokenforQue()
+        const newUserBooking = await new UserBooking({
+            userID:updatedUser.userID,
+            cutType:req.body.data.cutType,
+            comingWith:req.body.data.comingWithValue,
+            bookingToken:bookingToken,
+            registerTime:localDate
+
+        }).save()
+        console.log('else blogu updated user: ', newUserBooking)
+
         res.json({
             status:true,
-            queueToken:123,
-            user: updatedUser
+            queueToken:bookingToken,
+            userDatas: {
+                name:req.body.data.name,
+                cutType:req.body.data.cutType,
+                comingWith:req.body.data.comingWithValue
+            }
         })
 
     }
 })
 
+// If exists get daily booking or create new one
 publicRouter.get('/get-dailyBooking', async (req,res) => {
-
     const now = new Date();
     // It is giving difference between UTC time and local time in type of minute so now its logging -180 
     const offset = now.getTimezoneOffset()
@@ -119,6 +154,9 @@ publicRouter.get('/get-dailyBooking', async (req,res) => {
 publicRouter.get('/close-dailyBooking' , async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
     if(latestRecord.isClosed === false){
+        const shop = await Shop.findOne({shopID:1})
+        latestRecord.dailyPaid += shop.cutPrice * latestRecord.cutCount
+        latestRecord.dailyPaid += shop.cutBPrice * latestRecord.cutBCount
         latestRecord.isClosed = true
         await latestRecord.save()
     }

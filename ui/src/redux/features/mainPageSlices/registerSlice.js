@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, current } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import registerControl from "../../../helpers/registerControl.js";
 import axios from 'axios'
 import { encryptData } from "../../../helpers/cryptoProcess.js";
@@ -6,7 +6,7 @@ let initialState = {
     values:{
         name:"",
         phoneNumber:"",
-        cutValue:"cut",
+        cutValue:"",
         comingWithValue:"",
         errors: []
     }

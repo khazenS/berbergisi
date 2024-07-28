@@ -91,7 +91,7 @@ export default function LineModal() {
             <FormLabel >Traş</FormLabel>
               <RadioGroup onChange={(e) =>{onInpF('cutValue',e.target.value)}} row defaultValue="cut" name="radio-buttons-group">
               <FormControlLabel value="cut" control={<Radio />} label="Saç" />
-              <FormControlLabel value="cutAndBeard" control={<Radio />} label="Saç-Sakal" />
+              <FormControlLabel value="cutB" control={<Radio />} label="Saç-Sakal" />
               <FormHelperText>Bu tahmini süre hesaplamada önemlidir.</FormHelperText>
               </RadioGroup>               
             </Box>

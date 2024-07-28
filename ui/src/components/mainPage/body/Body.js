@@ -37,7 +37,6 @@ function Body() {
 
   // This is for creating que on server
   useEffect(() => {
-    console.log(changedStatus)
     if(changedStatus === true){
       dispatch(getBooking())
     }else if(changedStatus === false){

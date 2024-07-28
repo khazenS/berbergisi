@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 
+// Admin token processes
 export function getTokenforAdmin(){
     const token = jwt.sign({
         type:'admin',
@@ -12,6 +13,29 @@ export function getTokenforAdmin(){
 export function verificationToken(firstToken){
     let response = ""
     jwt.verify(firstToken,process.env.JWT_SECRET, (err,decode) => {
+        if (err) {
+            response = false
+        }
+        else{
+            response = decode
+        }
+    })
+
+    return response
+}
+
+// Que token processes
+export function getTokenforQue(){
+    const token = jwt.sign({
+        type:'Queue'
+    },process.env.JWT_SECRET_QUE)
+
+    return token
+}
+
+export function verificationQueToken(firstToken){
+    let response = ""
+    jwt.verify(firstToken,process.env.JWT_SECRET_QUE, (err,decode) => {
         if (err) {
             response = false
         }
