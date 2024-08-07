@@ -8,7 +8,8 @@ import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
 import QueueInformation from "./QueueInformation.js";
-import { closeDayBooking, getBooking } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { closeDayBooking, getBooking, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
 
 function Body() {
   const dispatch = useDispatch()
@@ -17,7 +18,6 @@ function Body() {
   const [changedStatus,setStatus] = useState(null)
 
   const dailyBookingState = useSelector(state => state.booking)
-
   //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
     dispatch(defineStatus());
@@ -41,15 +41,14 @@ function Body() {
       dispatch(getBooking())
     }else if(changedStatus === false){
       dispatch(closeDayBooking())
+      // This is for asycn process bug. Extra and previous datas (user and daily que) seem when close-open shop
+      dispatch(resetUserDatas())
+      dispatch(resetDailyQueue())
+      // When shop closed the cancel button still exists.It is for this bug
+      dispatch(resetQueueToken())
+      localStorage.removeItem('queueToken')
     }
   },[dispatch,changedStatus])
-  // Getting daily booking queue
-  useEffect(() => {
-    if(dailyBookingState.dailyQueue !== null){
-      console.log('dailiy queue: ',dailyBookingState.dailyQueue)
-    }
-  },[dailyBookingState.dailyQueue])
-
   if (shopStatusState.defineRequest.isLoading === true || shopStatusState.status === null || dailyBookingState === true ) {
     return (
       <Box

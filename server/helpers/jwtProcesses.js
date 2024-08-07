@@ -25,10 +25,12 @@ export function verificationToken(firstToken){
 }
 
 // Que token processes
-export function getTokenforQue(){
+export function getTokenforQue(userBookingID,dayBookingID){
     const token = jwt.sign({
-        type:'Queue'
-    },process.env.JWT_SECRET_QUE)
+        type:'Queue',
+        userBookingID,
+        dayBookingID
+    },process.env.JWT_SECRET_QUE,{expiresIn: '1d'})
 
     return token
 }
@@ -44,5 +46,5 @@ export function verificationQueToken(firstToken){
         }
     })
 
-    return response
+    return response 
 }

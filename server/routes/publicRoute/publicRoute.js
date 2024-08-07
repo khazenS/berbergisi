@@ -1,5 +1,5 @@
 import express from 'express'
-import { getTokenforAdmin, getTokenforQue } from '../../helpers/jwtProcesses.js'
+import { getTokenforAdmin, getTokenforQue, verificationQueToken } from '../../helpers/jwtProcesses.js'
 import { Shop } from '../../database/schemas/shopSchema.js';
 import { User } from '../../database/schemas/userSchema.js';
 import { DayBooking } from '../../database/schemas/dayBookingSchema.js';
@@ -44,9 +44,12 @@ publicRouter.get('/shopStatus',async (req,res)=>{
 // User register 
 publicRouter.post('/register-user', async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
+    // date 
     const now = new Date();
     const offset = now.getTimezoneOffset()
-    const localDate = new Date(now.getTime() - (offset * 60 * 1000))  
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+    // get current daily shop
+    const lastDayBooking = await DayBooking.findOne().sort({existDayDate : -1})
     if(!user){
         // new user record
         const updatedUser = await new User({
@@ -56,24 +59,35 @@ publicRouter.post('/register-user', async (req,res) => {
         }).save()
 
         //new user booking record
-        const bookingToken = getTokenforQue()
         const newUserBooking = await new UserBooking({
             userID:updatedUser.userID,
             cutType:req.body.data.cutType,
             comingWith:req.body.data.comingWithValue,
-            bookingToken:bookingToken,
+            bookingToken:null,
             registerTime:localDate
 
         }).save()
-        console.log('if blogu updated user: ', newUserBooking)
+        const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
+        newUserBooking.bookingToken = bookingToken
+        await newUserBooking.save()
+        //push to que new user
+        lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
+        await lastDayBooking.save()
+        
+        
+
         res.json({
             status:true,
             queueToken:bookingToken,
-            userDatas: {
-                name:req.body.data.name,
-                cutType:req.body.data.cutType,
-                comingWith:req.body.data.comingWithValue
-            }
+            userDatas: encryptData(
+                {
+                    name:req.body.data.name,
+                    cutType:req.body.data.cutType,
+                    comingWith:req.body.data.comingWithValue,
+                    userBookingID:newUserBooking.userBookingID,
+                    phoneNumber:req.body.data.phoneNumber
+                }
+            )
         })
     }else{
         //update user
@@ -81,25 +95,33 @@ publicRouter.post('/register-user', async (req,res) => {
         const updatedUser = await user.save()
 
         // new user booking
-        const bookingToken = getTokenforQue()
         const newUserBooking = await new UserBooking({
             userID:updatedUser.userID,
             cutType:req.body.data.cutType,
             comingWith:req.body.data.comingWithValue,
-            bookingToken:bookingToken,
+            bookingToken:null,
             registerTime:localDate
 
         }).save()
-        console.log('else blogu updated user: ', newUserBooking)
+        const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
+        newUserBooking.bookingToken = bookingToken
+        await newUserBooking.save()
+        //push to que new user
+        lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
+        await lastDayBooking.save()
 
         res.json({
             status:true,
             queueToken:bookingToken,
-            userDatas: {
-                name:req.body.data.name,
-                cutType:req.body.data.cutType,
-                comingWith:req.body.data.comingWithValue
-            }
+            userDatas: encryptData(
+                {
+                    name:req.body.data.name,
+                    cutType:req.body.data.cutType,
+                    comingWith:req.body.data.comingWithValue,
+                    userBookingID:newUserBooking.userBookingID,
+                    phoneNumber:req.body.data.phoneNumber
+                }
+            )
         })
 
     }
@@ -141,16 +163,28 @@ publicRouter.get('/get-dailyBooking', async (req,res) => {
             dayBookingID: encryptData(newDayBooking.dayBookingID)
         })
     }else{
+        const responseArray = []
+        for(const userBookingID of latestRecord.usersBooking){
+            const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
+            const currentUser = await User.findOne({userID:currentUserBooking.userID})
+            const responseData = {
+                name:currentUser.name,
+                cutType:currentUserBooking.cutType,
+                comingWith:currentUserBooking.comingWith,
+                userBookingID:userBookingID
+            }
+            responseArray.push(responseData)
+        }
         res.json({
             status: true,
-            dailyQue : encryptData(latestRecord.usersBooking),
-            dayBookingID: encryptData(latestRecord.dayBookingID)
+            dailyQue : encryptData(responseArray),
+            dayBookingID: encryptData(latestRecord.dayBookingID),
         })
     }
     
 })
 
-
+// Close daily booking and update daily cut counts
 publicRouter.get('/close-dailyBooking' , async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
     if(latestRecord.isClosed === false){
@@ -163,6 +197,53 @@ publicRouter.get('/close-dailyBooking' , async (req,res) => {
     res.json({
         status:true
     })
+})
+
+// Check the que token when page uploaded
+publicRouter.post('/check-queue-token', async (req,res) => {
+    const tokenBody = verificationQueToken(req.body.queueToken)
+    if(tokenBody !== false){
+        res.json({
+            status: true,
+            queueToken: req.body.queueToken,
+            message: 'token is valid'
+        })
+    }else{
+        res.json({
+            status:false,
+            message:'token is not valid'
+        })
+    }       
+})
+
+// Controlling queueToken for cancel the order and then cancel
+publicRouter.post('/cancel-queue', async (req,res) => {
+    const tokenBody = verificationQueToken(req.body.queueToken)
+    console.log(tokenBody)
+    if(tokenBody !== false){
+        
+        const userBooking = await UserBooking.findOne({userBookingID:tokenBody.userBookingID})
+        const dayBooking = await DayBooking.findOne({dayBookingID:tokenBody.dayBookingID})
+        console.log(dayBooking.usersBooking)
+        if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
+            dayBooking.usersBooking = dayBooking.usersBooking.filter( userBookingID => userBookingID !== userBooking.userBookingID)
+            await dayBooking.save()
+            res.json({
+                status:true,
+                userBookingID:userBooking.userBookingID
+            })
+        }else{
+            res.json({
+                status:false,
+                message:'Token is not valid'
+            })
+        }
+    }else{
+        res.json({
+            status:false,
+            message:'Token is not valid'
+        })
+    }
 })
 
 export default publicRouter

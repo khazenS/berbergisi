@@ -2,13 +2,11 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Modal from "@mui/material/Modal";
-import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField } from "@mui/material";
+import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField , Alert } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { controlForFetch,registerUser,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
-import { increaseQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
-
+import { cancelQue, checkQueueToken, controlForFetch,registerUser,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
 const style = {
   position: "absolute",
   top: "50%",
@@ -27,9 +25,15 @@ export default function LineModal() {
   const dispatch = useDispatch()
   // This is for setting errors for fetch data
   const [submitClicked,setSubmitClicked] = React.useState(false)
+  const [samePhoneError,setSamePhoneError] = React.useState(false)
+
   //registerSlice state
   const state = useSelector(state => state.register.values)
-  //Fonctions for model process
+  // queueToken state
+  const queueToken = useSelector(state => state.register.queueToken)
+  // ... 
+  const dailyQue = useSelector( state => state.booking.dailyQueue)
+  //Functions for model process
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     dispatch(updateRegisterState({'nameType':'name','value':''}))
@@ -47,31 +51,71 @@ export default function LineModal() {
   }
   React.useEffect(()=>{
     if(submitClicked){
+      const phoneNumberIndex = dailyQue.findIndex(user => user.phoneNumber === state.phoneNumber)
       if(state.errors.length === 0 ){
-        dispatch(registerUser(state))
+        if(phoneNumberIndex !== -1){
+          setSamePhoneError(true)
+        }else{
+          dispatch(registerUser(state))
+          setOpen(false)
+        }
       }
+      setTimeout(()=>{
+        setSamePhoneError(false)
+      },2000)
+      setSubmitClicked(false)
     }
-    setSubmitClicked(false)
-  },[state,submitClicked,dispatch])
+  },[state,submitClicked,dispatch,dailyQue])
 
+  // queue token processes
+  React.useEffect( () => {
+    const token = localStorage.getItem('queueToken')
+    if(token){
+      dispatch(checkQueueToken(token))
+    }
+  },[dispatch])
+  React.useEffect(() => {
+    setOpen(false)
+  },[queueToken.token])
+
+  const handleCancel = () => {
+    dispatch(cancelQue(queueToken.token))
+  }
 
   return (
     <Container>
-      <Button
-        variant="contained"
-        onClick={handleOpen}
-        sx={{
-          margin: "1.75rem auto",
-          display: "block",
-          fontSize: "1.2rem",
-          fontWeight: "bold",
-        }}
-        color="success"
-      >
-        Hemen Sıra Al
-      </Button>
+      {
+        queueToken.isLoading === true ? <Box></Box> : queueToken.token ? 
+        <Button
+          variant="contained"
+          onClick={() => {handleCancel()}}
+          sx={{
+            margin: "1.75rem auto",
+            display: "block",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+          }}
+          color="error"
+        >
+          Sıramı iptal et
+        </Button>
+        :
+        <Button
+          variant="contained"
+          onClick={handleOpen}
+          sx={{
+            margin: "1.75rem auto",
+            display: "block",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+          }}
+          color="success"
+        >
+          Hemen Sıra Al
+        </Button>
+      }
 
-      
+
       <Modal
         open={open}
       >
@@ -106,7 +150,9 @@ export default function LineModal() {
               <FormHelperText>Bu sıralamada önemlidir.</FormHelperText>
               </RadioGroup>               
             </Box>
-
+            {
+              samePhoneError === true ? <Alert sx={{marginTop:3,marginBottom:3}} severity="error" variant="filled">Bu telefon numarası zaten sırada</Alert> : <Box></Box>
+            }
             <Button variant="contained" onClick={()=>{handleSubmit()}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
 
           </Box>

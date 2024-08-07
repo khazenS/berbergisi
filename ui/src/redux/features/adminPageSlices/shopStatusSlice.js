@@ -16,13 +16,13 @@ let initialState = {
 }
 
 export const controlAdminAccessToken = createAsyncThunk('controlAdminAccessToken',async () => {
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxODUyMjI3LCJleHAiOjE3MjI0NTcwMjd9.3YlepUruAIxQVNvxLB8xkcwkWfPO1-7Dhksrjgx0xUs'
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIyNTkxNzc2LCJleHAiOjE3MjMxOTY1NzZ9._da5AUZ8dD_QHrOtdihSsPG0-oey9dyry0-0ByHZv40'
     const response = await axios.get(process.env.REACT_APP_SERVER_URL+'admin/controlAdminAccessToken',{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
 
 export const changeStatus = createAsyncThunk('changeStatus',async (statusData)=>{
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIxODUyMjI3LCJleHAiOjE3MjI0NTcwMjd9.3YlepUruAIxQVNvxLB8xkcwkWfPO1-7Dhksrjgx0xUs'
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWRtaW4iLCJleHBpcmVzVGltZSI6IjF3IiwiaWF0IjoxNzIyNTkxNzc2LCJleHAiOjE3MjMxOTY1NzZ9._da5AUZ8dD_QHrOtdihSsPG0-oey9dyry0-0ByHZv40'
     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/change-status',{statusData},{headers:{'Authorization': `Bearer ${token}`}})
     return response.data
 })
