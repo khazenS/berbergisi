@@ -6,17 +6,9 @@ import { DayBooking } from '../../database/schemas/dayBookingSchema.js';
 import { encryptData } from '../../helpers/cryptoProcess.js';
 import { MonthBooking } from '../../database/schemas/monthBookingSchema.js';
 import { UserBooking } from '../../database/schemas/userBookingSchema.js';
+import { Admin } from '../../database/schemas/adminSchema.js';
+
 const publicRouter = express.Router()
-
-//Create a admin access token and send to ui 
-publicRouter.get('/adminLogin',(req,res)=>{
-    const adminAccessToken = getTokenforAdmin()
-    res.json({
-        status:true,
-        adminAccessToken:adminAccessToken
-    })
-})
-
 
 //Learn the shop open or close
 publicRouter.get('/shopStatus',async (req,res)=>{
@@ -246,4 +238,25 @@ publicRouter.post('/cancel-queue', async (req,res) => {
     }
 })
 
+
+//Create a admin access token and send to ui 
+publicRouter.post('/admin-login', async (req,res) => {
+    const admin = await Admin.findOne()
+    if(admin.username === req.body.username && admin.password === req.body.password){
+        const adminAccessToken = getTokenforAdmin()
+        admin.adminAccessToken = adminAccessToken
+        await admin.save()
+
+        res.json({
+            status:true,
+            adminAccessToken
+        })
+    }else{
+        res.json({
+            status:false,
+            message:'Invalid username or password.'
+        })
+    }
+
+})
 export default publicRouter

@@ -27,6 +27,7 @@ function Body() {
   // We listen 'changedStatus' socket and set value to changedStatus state
   useEffect(()=>{
     socket.on('changedStatus',(status) => {
+      console.log(status)
       setStatus(status)
     })
 

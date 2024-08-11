@@ -14,7 +14,7 @@ adminRouter.post('/change-status',async(req,res)=>{
     })
 })
 
-
+// We just check the admin access token for show other admin utilities
 adminRouter.get('/controlAdminAccessToken',async(req,res)=>{
     res.json({
         status:true,

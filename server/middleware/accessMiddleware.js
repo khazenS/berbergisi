@@ -13,7 +13,7 @@ export const accessMiddleware = async (req,res,next) => {
     else{
         res.json({
             status:false,
-            message:"Token is not valid or expired!"
+            errorType:'admin access token'
         })
     }
 

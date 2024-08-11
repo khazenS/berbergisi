@@ -124,5 +124,4 @@ export const registerSlice = createSlice({
 })
 
 export const {updateRegisterState,controlForFetch,resetUserDatas,resetQueueToken} = registerSlice.actions
-
 export default registerSlice.reducer

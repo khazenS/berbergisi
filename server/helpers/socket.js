@@ -8,6 +8,7 @@ const setupSocket = (io) => {
           });
         //Listen 'status' socket
         socket.on('changeStatus',(status) => {
+            console.log(status)
             //Send to all client
             io.emit('changedStatus',status)
         })
