@@ -1,13 +1,15 @@
-import {  Table, TableBody, TableCell, TableContainer, TableHead, TableRow , CircularProgress , Box, Typography} from "@mui/material";
+import {  Table, TableBody, TableCell, TableContainer, TableHead, TableRow , CircularProgress , Box, Typography, listItemSecondaryActionClasses} from "@mui/material";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { newUserToQue, removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice";
 import { socket } from "../../../helpers/socketio.js";
+import { resetQueueToken } from "../../../redux/features/mainPageSlices/registerSlice.js";
 
 export default function LineTable(){
     const dispatch = useDispatch()
     const dailyQue = useSelector( state => state.booking.dailyQueue )
     const userDatas = useSelector( state => state.register.userDatas)
+    const queToken = useSelector( state => state.register.queueToken)
     useEffect(() => {
         if(userDatas){
           // Sending userDatas to all client
@@ -26,7 +28,7 @@ export default function LineTable(){
       }
     },[dispatch])
     
-    // Listen socket for caancel specialized que on daily que and ui
+    // Listen socket for cancel specialized que on daily que and 
     useEffect( () => {
       socket.on('cancel',(userBookingID) =>{
         dispatch(removeUserFromQue(userBookingID))
@@ -35,6 +37,7 @@ export default function LineTable(){
         socket.off('cancel')
       }
     },[dispatch])
+
 
 
     if(dailyQue){

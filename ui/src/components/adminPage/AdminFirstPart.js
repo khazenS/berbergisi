@@ -22,7 +22,6 @@ export default function AdminFirstPart(){
     useEffect( () => {
         if(shopStatusState.expiredError === true){
            navigate('/adminLogin')
-           console.log(shopStatusState.expiredError)
         }
     },[shopStatusState.expiredError,navigate])
     
@@ -34,7 +33,6 @@ export default function AdminFirstPart(){
 
     //Logout button click function 
     const handleLogoutButton = () => {
-        console.log('logout')
         localStorage.removeItem('adminAccessToken')
         navigate('/adminLogin')
     }

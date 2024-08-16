@@ -23,6 +23,15 @@ const setupSocket = (io) => {
         socket.on('cancel-que',(userBookingID)=>{
             io.emit('cancel', userBookingID)
         })
+
+        // remove user from que on admin
+        socket.on('remove-que',(datas) => {
+            io.emit('remove' , datas)
+        })
+        // finish cut
+        socket.on('finish-cut',(datas) =>{
+            io.emit('finished-cut', datas)
+        })
     })
 }
 

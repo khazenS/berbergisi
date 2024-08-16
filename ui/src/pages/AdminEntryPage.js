@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { adminLogin, resetAdminDatas, resetExpiredError, updatePassword, updateUsername } from '../redux/features/adminPageSlices/adminLoginSlice';
 import { useNavigate } from 'react-router-dom';
 import { resetShopStatusExpiredError } from '../redux/features/adminPageSlices/shopStatusSlice';
+import { resetCancelExpiredError } from '../redux/features/adminPageSlices/adminDailyBookingSlice';
 function AdminEntryPage(){
     const dispatch = useDispatch()
     const adminDatas = useSelector( state => state.adminLogin.adminDatas)
@@ -28,6 +29,7 @@ function AdminEntryPage(){
     useEffect( () => {
         dispatch(resetExpiredError())
         dispatch(resetShopStatusExpiredError())
+        dispatch(resetCancelExpiredError())
     },[dispatch,adminExpired,shopExpired])
     return (
         <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh' }}>

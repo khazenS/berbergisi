@@ -77,6 +77,9 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
+            state.values.cutValue = "cut"
+            state.values.comingWithValue = 1
+
             state.userDatas = decryptData(action.payload.userDatas)
             state.queueToken.token = action.payload.queueToken
             localStorage.setItem('queueToken',action.payload.queueToken)

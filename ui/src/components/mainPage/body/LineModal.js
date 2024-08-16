@@ -6,7 +6,10 @@ import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdorn
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { cancelQue, checkQueueToken, controlForFetch,registerUser,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { cancelQue, checkQueueToken, controlForFetch,registerUser,resetQueueToken,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { socket } from "../../../helpers/socketio.js";
+import { removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { jwtDecode } from "jwt-decode";
 const style = {
   position: "absolute",
   top: "50%",
@@ -31,7 +34,7 @@ export default function LineModal() {
   const state = useSelector(state => state.register.values)
   // queueToken state
   const queueToken = useSelector(state => state.register.queueToken)
-  // ... 
+  // daily queue state 
   const dailyQue = useSelector( state => state.booking.dailyQueue)
   //Functions for model process
   const handleOpen = () => setOpen(true);
@@ -74,9 +77,43 @@ export default function LineModal() {
       dispatch(checkQueueToken(token))
     }
   },[dispatch])
+
   React.useEffect(() => {
     setOpen(false)
   },[queueToken.token])
+
+  // remove socket for cancelling on admin panel
+  React.useEffect( () => {
+    socket.on('remove',({userBookingID,bookingToken}) =>{
+      const localToken = localStorage.getItem('queueToken')
+      const bodyID = jwtDecode(bookingToken).userBookingID
+      if(bodyID === userBookingID && bookingToken === localToken){
+        localStorage.removeItem('queueToken')
+        dispatch(resetQueueToken())
+      }
+      dispatch(removeUserFromQue(userBookingID))
+    })
+    return () => {
+      socket.off('remove')
+    }
+  },[dispatch])
+
+  // finis cut on admin panel
+  React.useEffect( () => {
+    socket.on('finished-cut',({userBookingID,bookingToken}) =>{
+      const localToken = localStorage.getItem('queueToken')
+      const bodyID = jwtDecode(bookingToken).userBookingID
+      if(bodyID === userBookingID && bookingToken === localToken){
+        localStorage.removeItem('queueToken')
+        dispatch(resetQueueToken())
+      }
+      dispatch(removeUserFromQue(userBookingID))
+    })
+    return () => {
+      socket.off('finished-cut')
+    }
+  },[dispatch])
+
 
   const handleCancel = () => {
     dispatch(cancelQue(queueToken.token))
