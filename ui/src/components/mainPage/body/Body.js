@@ -7,9 +7,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
-import QueueInformation from "./QueueInformation.js";
 import { closeDayBooking, getBooking, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import InfoBoxes from "./InfoBoxes.js";
+import LineTable from "./LineTable.js";
 
 function Body() {
   const dispatch = useDispatch()
@@ -84,7 +85,8 @@ function Body() {
       <div>
         {changedStatus ? (
           <>
-            <QueueInformation></QueueInformation>
+            <InfoBoxes></InfoBoxes>
+            <LineTable></LineTable>    
           </>
         ) : (
           <CloseShop></CloseShop>

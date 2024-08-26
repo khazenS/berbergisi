@@ -86,10 +86,12 @@ export default function LineModal() {
   React.useEffect( () => {
     socket.on('remove',({userBookingID,bookingToken}) =>{
       const localToken = localStorage.getItem('queueToken')
-      const bodyID = jwtDecode(bookingToken).userBookingID
-      if(bodyID === userBookingID && bookingToken === localToken){
-        localStorage.removeItem('queueToken')
-        dispatch(resetQueueToken())
+      if(bookingToken !== null){
+        const bodyID = jwtDecode(bookingToken).userBookingID
+        if(bodyID === userBookingID && bookingToken === localToken){
+          localStorage.removeItem('queueToken')
+          dispatch(resetQueueToken())
+        }
       }
       dispatch(removeUserFromQue(userBookingID))
     })
@@ -102,10 +104,12 @@ export default function LineModal() {
   React.useEffect( () => {
     socket.on('finished-cut',({userBookingID,bookingToken}) =>{
       const localToken = localStorage.getItem('queueToken')
-      const bodyID = jwtDecode(bookingToken).userBookingID
-      if(bodyID === userBookingID && bookingToken === localToken){
-        localStorage.removeItem('queueToken')
-        dispatch(resetQueueToken())
+      if(bookingToken !== null){
+        const bodyID = jwtDecode(bookingToken).userBookingID
+        if(bodyID === userBookingID && bookingToken === localToken){
+          localStorage.removeItem('queueToken')
+          dispatch(resetQueueToken())
+        }
       }
       dispatch(removeUserFromQue(userBookingID))
     })

@@ -7,6 +7,10 @@ const userBookingSchema = new mongoose.Schema({
     userID:{
         type:Number
     },
+    name: {
+        type:String,
+        default:''
+    },
     cutType:{
         type:String
     },

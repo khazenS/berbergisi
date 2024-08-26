@@ -25,11 +25,29 @@ export const removeUserFromAdminQue = createAsyncThunk('removeUserFromAdminQue',
 
 
 export const cutFinished = createAsyncThunk('cutFinished', async (userBookingID) => {
-    console.log('burda')
     const localToken = localStorage.getItem('adminAccessToken')
     const response = await axios.put(process.env.REACT_APP_SERVER_URL+`admin/finish-cut/${userBookingID}`,{},{headers:{'Authorization': `Bearer ${localToken}`}})
     return response.data
 })
+
+export const upMoveReq = createAsyncThunk('upMoveReq', async (index) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/up-move',{
+        index
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
+
+export const downMoveReq = createAsyncThunk('downMoveReq', async (index) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/down-move',{
+        index
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
+
 
 export const adminDayBookingSlice = createSlice({
     name:'adminDayBookingSlice',
@@ -41,9 +59,11 @@ export const adminDayBookingSlice = createSlice({
         addNewUser: (state,action) => {
             state.dailyQueue.push({
                 name:action.payload.name,
+                cutType:action.payload.cutType,
                 phoneNumber:action.payload.phoneNumber,
                 comingWith:action.payload.comingWith,
-                userBookingID:action.payload.userBookingID
+                userBookingID:action.payload.userBookingID,
+                shownDate:action.payload.shownDate
                 
             })
         },
@@ -52,6 +72,21 @@ export const adminDayBookingSlice = createSlice({
         },
         resetCancelExpiredError: (state) => {
             state.expiredError = false
+        },
+        upMove : (state,action) => {
+            const currentIndex = action.payload
+            const temp = state.dailyQueue[currentIndex - 1]
+
+            state.dailyQueue[currentIndex - 1] = state.dailyQueue[currentIndex]
+            state.dailyQueue[currentIndex] = temp
+
+        },
+        downMove : (state,action) => {
+            const currentIndex = action.payload
+            const temp = state.dailyQueue[currentIndex + 1]
+
+            state.dailyQueue[currentIndex + 1] = state.dailyQueue[currentIndex]
+            state.dailyQueue[currentIndex] = temp
         }
     },
     extraReducers : (builder) => {
@@ -68,13 +103,14 @@ export const adminDayBookingSlice = createSlice({
             state.error = true
             console.log('Error on getDailyBookingAdmin()')
         })
+
+
         // removeUserFromAdminQue processes
         builder.addCase(removeUserFromAdminQue.pending,(state) => {
             state.isLoading = true
             state.error = false
         })
         builder.addCase(removeUserFromAdminQue.fulfilled,(state,action) => {
-
            if(action.payload.status === true){
                 socket.emit('remove-que',{userBookingID:action.payload.userBookingID,bookingToken:action.payload.bookingToken})
            }else{
@@ -86,6 +122,8 @@ export const adminDayBookingSlice = createSlice({
             state.error = true
             state.isLoading = false
         })
+
+
         // cutFinished processes
         builder.addCase(cutFinished.pending, (state) => {
             state.isLoading = true
@@ -104,8 +142,46 @@ export const adminDayBookingSlice = createSlice({
             state.isLoading = false
             console.log('Error on cutFinished')
         })
+
+
+        // up move request processes
+        builder.addCase(upMoveReq.pending, (state) => {
+            state.isLoading = true
+            state.error=false
+        })
+        builder.addCase(upMoveReq.fulfilled, (state,action) => {
+            if(action.payload.status === true){
+                socket.emit('up-move',{index:action.payload.index})
+            }else{
+                state.expiredError = true
+            }
+            state.isLoading = false
+        })
+        builder.addCase(upMoveReq.rejected, (state) => {
+            state.error =  true
+            console.log('Error on upMoveReq')
+        }) 
+
+        
+        // down move request processes
+        builder.addCase(downMoveReq.pending, (state) => {
+            state.isLoading = true
+            state.error=false
+        })
+        builder.addCase(downMoveReq.fulfilled, (state,action) => {
+            if(action.payload.status === true){
+                socket.emit('down-move',{index:action.payload.index})
+            }else{
+                state.expiredError = true
+            }
+            state.isLoading = false
+        })
+        builder.addCase(downMoveReq.rejected, (state) => {
+            state.error =  true
+            console.log('Error on downMoveReq')
+        }) 
     }
 })
 
-export const {resetDailyQueue,addNewUser,cancelUserFromAdminQue,resetCancelExpiredError} = adminDayBookingSlice.actions
+export const {resetDailyQueue,addNewUser,cancelUserFromAdminQue,resetCancelExpiredError,upMove,downMove} = adminDayBookingSlice.actions
 export default adminDayBookingSlice.reducer

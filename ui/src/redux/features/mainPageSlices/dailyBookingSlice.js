@@ -38,6 +38,20 @@ export const dailyBookingSlice = createSlice({
         },
         removeUserFromQue : (state,action) => {
             state.dailyQueue = state.dailyQueue.filter( user => user.userBookingID !== action.payload)
+        },
+        upMove : (state,action) => {
+            const currentIndex = action.payload
+            const temp = state.dailyQueue[currentIndex - 1]
+
+            state.dailyQueue[currentIndex - 1] = state.dailyQueue[currentIndex]
+            state.dailyQueue[currentIndex] = temp
+        },
+        downMove : (state,action) => {
+            const currentIndex = action.payload
+            const temp = state.dailyQueue[currentIndex + 1]
+
+            state.dailyQueue[currentIndex + 1] = state.dailyQueue[currentIndex]
+            state.dailyQueue[currentIndex] = temp
         }
     },
     extraReducers: (builder) => {
@@ -70,5 +84,5 @@ export const dailyBookingSlice = createSlice({
     }
 })
 
-export const {newUserToQue,resetDailyQueue,removeUserFromQue} = dailyBookingSlice.actions
+export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove} = dailyBookingSlice.actions
 export default dailyBookingSlice.reducer

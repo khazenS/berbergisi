@@ -6,21 +6,9 @@ import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import {useDispatch,useSelector} from 'react-redux'
-import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQueue, removeUserFromAdminQue, cutFinished } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
+import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQueue, removeUserFromAdminQue, cutFinished, upMove, downMove, upMoveReq, downMoveReq } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
 import { socket } from "../../helpers/socketio";
 import { useNavigate } from "react-router-dom";
-
-const datas = [
-    {name:'Abdullah12',phoneNumber:5323555754,comingWith:2},
-    {name:'Apo',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2},
-    {name:'Mehmet',phoneNumber:5323555754,comingWith:2}
-]
-
 
 //Row 
 function Row(props){
@@ -28,9 +16,6 @@ function Row(props){
     const { dailyQueue } = props
     const [open,setOpen] = useState(false)
     const dispatch = useDispatch()
-
-
-
     const handleCancel = (userBookingID) => {
         dispatch(removeUserFromAdminQue(userBookingID))
     }
@@ -39,6 +24,19 @@ function Row(props){
         
         dispatch(cutFinished(userBookingID))
     }
+
+    const handleUpMove = () => {
+        console.log('up move')
+        dispatch(upMoveReq(dailyQueue.indexOf(row)))
+        setOpen(false)
+    }
+
+    const handleDownMove = () => {
+        console.log('down move')
+        dispatch(downMoveReq(dailyQueue.indexOf(row)))
+        setOpen(false)
+    }
+
     return (
         <React.Fragment>
             <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }} key={dailyQueue.indexOf(row)}>
@@ -64,11 +62,16 @@ function Row(props){
                     <Collapse in={open} timeout="auto" unmountOnExit>
                         <Grid container spacing={2}>
                             <Grid item xs={3}>
-                                <a href={`tel:+90${row.phoneNumber}`}>
-                                    <IconButton sx={{margin:1}}  style={{backgroundColor: 'green',color: 'white',borderRadius: '50%',padding: 3}}>
-                                        <LocalPhoneIcon />
-                                    </IconButton>
-                                </a>
+                                {
+                                    row.phoneNumber !== null ?
+                                    <a href={`tel:+90${row.phoneNumber}`}>
+                                        <IconButton sx={{margin:1}}  style={{backgroundColor: 'green',color: 'white',borderRadius: '50%',padding: 3}}>
+                                            <LocalPhoneIcon />
+                                        </IconButton>
+                                    </a> :
+                                    <></>
+
+                                }
                                 
                             </Grid>
                             <Grid item xs={2}>
@@ -82,17 +85,25 @@ function Row(props){
                                 </IconButton>
                             </Grid>
                             <Grid item xs={2}>
-                                <IconButton sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
+                                <IconButton onClick={dailyQueue.indexOf(row) === 0 ? null : handleUpMove} sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
                                     <KeyboardArrowUpIcon />
                                 </IconButton>
                                 
+                                </Grid>
+                                <Grid item xs={2}>
+                                    <IconButton onClick={dailyQueue.indexOf(row) === dailyQueue.length - 1 ? null : handleDownMove} sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
+                                        <KeyboardArrowDownIcon />
+                                    </IconButton>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={2}>
-                                <IconButton sx={{margin:1}} style={{backgroundColor: 'blue',color: 'white',borderRadius: '50%',padding: 3}}>
-                                    <KeyboardArrowDownIcon />
-                                </IconButton>
+                            <Grid container spacing={2}>
+                                <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
+                                    {row.cutType === 'cut' ? 'Saç'  : 'Saç-Sakal'}
+                                </Grid>
+                                <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
+                                    {row.shownDate}
+                                </Grid>
                             </Grid>
-                        </Grid>
                     </Collapse>
                 </TableCell>
             </TableRow>
@@ -107,6 +118,12 @@ export default function AdminQueTable(){
     
     const navigate = useNavigate()
 
+    // token error exists
+    useEffect( () => {
+        if(cancelTokenError === true){
+            navigate('/adminLogin')
+        }
+    },[cancelTokenError,navigate])
     // Control of shop that is close or open if shopStatus is false then convert calue of que to null for new opening
     useEffect(() => {
         if(shopStatus === true){
@@ -120,6 +137,7 @@ export default function AdminQueTable(){
     // Listen socket for adding new user to que then print it out
     useEffect(()=>{
         socket.on('newUser',(user) => {
+          console.log(user)
           dispatch(addNewUser(user))
         })
     
@@ -158,12 +176,31 @@ export default function AdminQueTable(){
         }
     },[dispatch])
 
-
+    // up move socket and process
     useEffect( () => {
-        if(cancelTokenError === true){
-            navigate('/adminLogin')
+        socket.on('up-moved',({index}) => {
+        dispatch(upMove(index))
+        })
+
+        return () => {
+            socket.off('up-moved')
         }
-    },[cancelTokenError,navigate])
+    },[dispatch])
+
+    // down move socket and process
+    useEffect( () => {
+        socket.on('down-moved',({index}) => {
+        dispatch(downMove(index))
+        })
+
+        return () => {
+            socket.off('down-moved')
+        }
+    },[dispatch])
+
+
+
+
     if(shopStatus === true && dailyQueue !== null){
         return (
             <Container sx={{marginTop:'15vh'}}>

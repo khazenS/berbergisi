@@ -1,15 +1,13 @@
-import {  Table, TableBody, TableCell, TableContainer, TableHead, TableRow , CircularProgress , Box, Typography, listItemSecondaryActionClasses} from "@mui/material";
+import {  Table, TableBody, TableCell, TableContainer, TableHead, TableRow , CircularProgress , Box, Typography} from "@mui/material";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { newUserToQue, removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice";
+import { downMove, newUserToQue, removeUserFromQue, upMove } from "../../../redux/features/mainPageSlices/dailyBookingSlice";
 import { socket } from "../../../helpers/socketio.js";
-import { resetQueueToken } from "../../../redux/features/mainPageSlices/registerSlice.js";
 
 export default function LineTable(){
     const dispatch = useDispatch()
     const dailyQue = useSelector( state => state.booking.dailyQueue )
     const userDatas = useSelector( state => state.register.userDatas)
-    const queToken = useSelector( state => state.register.queueToken)
     useEffect(() => {
         if(userDatas){
           // Sending userDatas to all client
@@ -27,6 +25,18 @@ export default function LineTable(){
         socket.off('newUser')
       }
     },[dispatch])
+
+    // Listen socket for new fast user to write it on ui
+    useEffect(()=>{
+      socket.on('fastUser-registered',(user) => {
+        dispatch(newUserToQue(user))
+      })
+  
+      return () => {
+        socket.off('fastUser-registered')
+      }
+    },[dispatch])
+    
     
     // Listen socket for cancel specialized que on daily que and 
     useEffect( () => {
@@ -38,7 +48,27 @@ export default function LineTable(){
       }
     },[dispatch])
 
+    // Listen up move socket for moving the user from admin panel
+    useEffect( () => {
+      socket.on('up-moved',({index}) => {
+        dispatch(upMove(index))
+      })
 
+      return () => {
+          socket.off('up-moved')
+      }
+    },[dispatch])
+
+    // Listen down move socket for moving the user from admin panel
+    useEffect( () => {
+      socket.on('down-moved',({index}) => {
+        dispatch(downMove(index))
+      })
+
+      return () => {
+        socket.off('down-moved')
+      }
+    },[dispatch])
 
     if(dailyQue){
     return (

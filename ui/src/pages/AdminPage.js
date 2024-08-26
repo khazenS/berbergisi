@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import AdminQueTable from "../components/adminPage/AdminQueTable.js";
+import FastOperations from "../components/adminPage/FastOperations.js";
+import ShopSettings from "../components/adminPage/ShopSettings.js";
+
 
 function AdminPage() {
     const dispatch = useDispatch();
@@ -35,6 +38,8 @@ function AdminPage() {
             <div>
                 <AdminFirstPart />
                 <AdminQueTable />
+                <FastOperations />
+                <ShopSettings />
             </div>
         );
     }

@@ -18,7 +18,7 @@ publicRouter.get('/shopStatus',async (req,res)=>{
             shopStatus:false,
             cutPrice:200,
             cutBPrice:250,
-            showMessage:""
+            showMessage:null
         }).save()
         res.json({
             status:true,
@@ -40,6 +40,14 @@ publicRouter.post('/register-user', async (req,res) => {
     const now = new Date();
     const offset = now.getTimezoneOffset()
     const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear()).slice(-2);
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
     // get current daily shop
     const lastDayBooking = await DayBooking.findOne().sort({existDayDate : -1})
     if(!user){
@@ -77,7 +85,8 @@ publicRouter.post('/register-user', async (req,res) => {
                     cutType:req.body.data.cutType,
                     comingWith:req.body.data.comingWithValue,
                     userBookingID:newUserBooking.userBookingID,
-                    phoneNumber:req.body.data.phoneNumber
+                    phoneNumber:req.body.data.phoneNumber,
+                    shownDate:formattedDate
                 }
             )
         })
@@ -111,7 +120,8 @@ publicRouter.post('/register-user', async (req,res) => {
                     cutType:req.body.data.cutType,
                     comingWith:req.body.data.comingWithValue,
                     userBookingID:newUserBooking.userBookingID,
-                    phoneNumber:req.body.data.phoneNumber
+                    phoneNumber:req.body.data.phoneNumber,
+                    shownDate:formattedDate
                 }
             )
         })
@@ -158,14 +168,24 @@ publicRouter.get('/get-dailyBooking', async (req,res) => {
         const responseArray = []
         for(const userBookingID of latestRecord.usersBooking){
             const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
-            const currentUser = await User.findOne({userID:currentUserBooking.userID})
-            const responseData = {
-                name:currentUser.name,
-                cutType:currentUserBooking.cutType,
-                comingWith:currentUserBooking.comingWith,
-                userBookingID:userBookingID
+            if(currentUserBooking.userID === undefined){
+                const responseData = {
+                    name:currentUserBooking.name,
+                    cutType:currentUserBooking.cutType,
+                    comingWith:currentUserBooking.comingWith,
+                    userBookingID:userBookingID
+                }
+                responseArray.push(responseData)
+            }else{
+                const currentUser = await User.findOne({userID:currentUserBooking.userID})
+                const responseData = {
+                    name:currentUser.name,
+                    cutType:currentUserBooking.cutType,
+                    comingWith:currentUserBooking.comingWith,
+                    userBookingID:userBookingID
+                }
+                responseArray.push(responseData)
             }
-            responseArray.push(responseData)
         }
         res.json({
             status: true,

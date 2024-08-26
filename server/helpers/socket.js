@@ -32,6 +32,22 @@ const setupSocket = (io) => {
         socket.on('finish-cut',(datas) =>{
             io.emit('finished-cut', datas)
         })
+        // up move socket for admin process
+        socket.on('up-move',(datas) =>{
+            io.emit('up-moved', datas)
+        })
+        // down move socket for admin process
+        socket.on('down-move',(datas) =>{
+            io.emit('down-moved', datas)
+        })
+        // fast user socket for admin process
+        socket.on('fastUser-register',(datas) =>{
+            io.emit('fastUser-registered', datas.fastUserDatas)
+        })
+        // shop settings socket for admin process
+        socket.on('get-shopSttings',(datas) =>{
+            io.emit('sended-shopSettings', datas)
+        })
     })
 }
 
