@@ -6,6 +6,8 @@ import adminLoginSlice from './features/adminPageSlices/adminLoginSlice.js'
 import adminDailyBookingSlice from './features/adminPageSlices/adminDailyBookingSlice.js'
 import fastOpsSlice from './features/adminPageSlices/fastOpsSlice.js'
 import shopSettingsSlice from './features/adminPageSlices/shopSettingsSlice.js'
+import showMessageSlice from './features/mainPageSlices/showMessageSlice.js'
+import shopStatsSlice from './features/adminPageSlices/shopStatsSlice.js'
 export default configureStore({
   reducer: {
     register: registerReducer,
@@ -14,6 +16,8 @@ export default configureStore({
     adminLogin : adminLoginSlice,
     adminBooking : adminDailyBookingSlice,
     fastOps : fastOpsSlice,
-    shopSettings: shopSettingsSlice
+    shopSettings: shopSettingsSlice,
+    showMessage : showMessageSlice,
+    shopStats:shopStatsSlice
   },
 })

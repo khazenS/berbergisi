@@ -279,4 +279,13 @@ publicRouter.post('/admin-login', async (req,res) => {
     }
 
 })
+
+// getting message for announcment
+publicRouter.get('/get-message', async (req,res) => {
+    const shop = await Shop.findOne()
+    const message = shop.showMessage
+    res.json({
+        message:message
+    })
+})
 export default publicRouter

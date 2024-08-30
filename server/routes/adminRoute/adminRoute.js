@@ -12,11 +12,28 @@ adminRouter.post('/change-status',async(req,res)=>{
     const shop = await Shop.findOne({shopID:1})
     shop.shopStatus = !req.body.statusData
     await shop.save()
-    res.json({
-        status:true,
-        newStatus:!req.body.statusData,
-        message:"shopStatus was updated"
-    })
+    if(!req.body.statusData === false){
+        const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
+        console.log(latestDayRecord)
+        res.json({
+            status:true,
+            newStatus:!req.body.statusData,
+            message:"shopStatus was updated",
+            lastDayStats:{
+                income:latestDayRecord.dailyPaid,
+                cutCount:latestDayRecord.cutCount,
+                cutBCount: latestDayRecord.cutBCount
+            }
+        })
+    }else{
+        res.json({
+            status:true,
+            newStatus:!req.body.statusData,
+            message:"shopStatus was updated",
+            lastDayStats:null
+        })        
+    }
+
 })
 
 // We just check the admin access token for show other admin utilities
@@ -100,7 +117,7 @@ adminRouter.delete('/delete-user-admin-que/:userBookingID', async (req,res) => {
 
 adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
-    const latestMonthRecord = await MonthBooking.findOne().sort({existDayDate : -1})
+    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
     
     const currentUserBooking = await UserBooking.findOne({userBookingID:Number(req.params.userBookingID)})
     const cutType = currentUserBooking.cutType
@@ -235,7 +252,7 @@ export default adminRouter;
 adminRouter.post('/increase-amount', async (req,res) => {
     const amount = Number(req.body.amount)
     const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
-    const latestMonthRecord = await MonthBooking.findOne().sort({existDayDate : -1})
+    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
 
     latestDayRecord.dailyPaid += amount
     latestMonthRecord.monthlyPaid += amount
@@ -252,7 +269,7 @@ adminRouter.post('/increase-amount', async (req,res) => {
 adminRouter.post('/decrease-amount', async (req,res) => {
     const amount = Number(req.body.amount)
     const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
-    const latestMonthRecord = await MonthBooking.findOne().sort({existDayDate : -1})
+    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
 
     latestDayRecord.dailyPaid -= amount
     latestMonthRecord.monthlyPaid -= amount
@@ -321,3 +338,78 @@ adminRouter.delete('/delete-message', async (req,res) => {
     })
 }
 )
+
+// add message to shop 
+adminRouter.post('/add-message' , async (req,res) => {
+    const shop = await Shop.findOne()
+    shop.showMessage = req.body.message
+    await shop.save()
+    res.json({
+        status:true,
+        message:req.body.message
+    })
+})
+
+// get all stats
+adminRouter.get('/get-stats', async (req,res) => {
+    // date 
+    const now = new Date();
+    const offset = now.getTimezoneOffset()
+    
+    const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const aWeekAgoDate = new Date(localNowDate.getTime() - (  7 * 24 * 60 * 60 * 1000))
+    const lastYearDate = new Date();
+    lastYearDate.setFullYear(localNowDate.getFullYear() - 1);
+
+    const latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1}) 
+    const weeklyRecords = await DayBooking.find({
+        existDayDate:{
+            $gte: aWeekAgoDate,
+            $lt:localNowDate 
+        }
+    })
+
+    let weeklyIncome = 0
+    let weeklyCCount = 0
+    let weeklyCBCount = 0
+    weeklyRecords.forEach(day => {
+        weeklyIncome += day.dailyPaid
+        weeklyCCount += day.cutCount
+        weeklyCBCount += day.cutBCount
+
+    });
+    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
+    const yearlyRecords = await MonthBooking.find({
+        existMonthDate:{
+            $gte: lastYearDate,
+            $lt:localNowDate
+        }
+    })
+    
+    let yearlyIncome = 0
+    yearlyRecords.forEach(month => {
+        yearlyIncome += month.monthlyPaid
+    });
+    
+    
+    res.json({
+        status:true,
+        stats:encryptData({
+            daily:{
+                income:latestDailyRecord.dailyPaid,
+                cutCount:latestDailyRecord.cutCount,
+                cutBCount:latestDailyRecord.cutBCount
+            },
+            weekly : {
+                income : weeklyIncome,
+                cutCount : weeklyCCount,
+                cutBCount : weeklyCBCount
+            },
+            monthlyIncome : latestMonthRecord.monthlyPaid,
+            yearlyIncome : yearlyIncome            
+        }
+    )
+
+        
+    })
+})

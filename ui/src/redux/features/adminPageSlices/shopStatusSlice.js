@@ -62,7 +62,7 @@ export const shopStatusSlice = createSlice({
                 state.expiredError = true
             }else{
                state.status = action.payload.newStatus
-               socket.emit('changeStatus', state.status);
+               socket.emit('changeStatus', {status: state.status , lastDayStats : action.payload.lastDayStats });
             }
             state.changeRequest.isLoading =false
             

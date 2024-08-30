@@ -7,10 +7,9 @@ const setupSocket = (io) => {
             console.log('user disconnected');
           });
         //Listen 'status' socket
-        socket.on('changeStatus',(status) => {
-            console.log(status)
+        socket.on('changeStatus',(datas) => {
             //Send to all client
-            io.emit('changedStatus',status)
+            io.emit('changedStatus',datas)
         })
 
         //Listen registered user socket
@@ -47,6 +46,14 @@ const setupSocket = (io) => {
         // shop settings socket for admin process
         socket.on('get-shopSttings',(datas) =>{
             io.emit('sended-shopSettings', datas)
+        })
+        // show message socket for admin process
+        socket.on('get-message',(datas) =>{
+            io.emit('sended-message', datas)
+        })
+        // delete message socket for admin process
+        socket.on('delete-message',() =>{
+            io.emit('deleted-message')
         })
     })
 }

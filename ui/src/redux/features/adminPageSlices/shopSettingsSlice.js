@@ -1,4 +1,3 @@
-import { create } from "@mui/material/styles/createTransitions"
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
 import { socket } from "../../../helpers/socketio"
@@ -46,6 +45,15 @@ export const deleteMessage = createAsyncThunk('deleteMessage', async () => {
     const response = await axios.delete(process.env.REACT_APP_SERVER_URL+'admin/delete-message',{headers:{'Authorization': `Bearer ${localToken}`}})
     return response.data
 })
+
+export const addMessage = createAsyncThunk('', async (message) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/add-message',{
+        message
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
 export const shopSettingsSlice = createSlice({
     name:'shopSettingsSlice',
     initialState,
@@ -73,6 +81,9 @@ export const shopSettingsSlice = createSlice({
         },
         updateShowMessage : (state,action) => {
             state.showMessage = action.payload
+        },
+        updateShopDataMessage : (state,action) => {
+            state.shopData.showMessage = action.payload
         }
     },
     extraReducers : (builder) => {
@@ -134,8 +145,7 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(deleteMessage.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                console.log('deleted')
-                console.log(action.payload)
+                socket.emit('delete-message')
             }else{
                 state.expiredError = true
             }
@@ -145,8 +155,25 @@ export const shopSettingsSlice = createSlice({
             state.error = true
             console.error('Error on deleteMessage')
         })
+        // add message actions
+        builder.addCase(addMessage.pending,(state) => {
+            state.isLoading = true
+            state.error = false
+        })
+        builder.addCase(addMessage.fulfilled, (state,action) => {
+            if(action.payload.status === true){
+                socket.emit('get-message', action.payload.message)
+            }else{
+                state.expiredError = true
+            }
+            state.isLoading = false
+        })
+        builder.addCase(addMessage.rejected,(state) => {
+            state.error = true
+            console.error('Error on addMessage')
+        })
     }
 })
 
-export const {updateRaisePriceValue,resetRaisePrice,resetDiscountPrice,updateDiscountPriceValue,resetShopSettingsExpiredError,setCutPrice,setCutBPrice,updateShowMessage} = shopSettingsSlice.actions
+export const {updateRaisePriceValue,resetRaisePrice,resetDiscountPrice,updateDiscountPriceValue,resetShopSettingsExpiredError,setCutPrice,setCutBPrice,updateShowMessage,updateShopDataMessage} = shopSettingsSlice.actions
 export default shopSettingsSlice.reducer

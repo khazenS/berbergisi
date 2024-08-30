@@ -2,7 +2,7 @@ import { Box, Container, Typography, TextField, Button, Collapse, Grid, IconButt
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { deleteMessage, discountService, getShop, raiseService, resetDiscountPrice, resetRaisePrice, setCutBPrice, setCutPrice, updateDiscountPriceValue, updateRaisePriceValue, updateShowMessage } from "../../redux/features/adminPageSlices/shopSettingsSlice";
+import { addMessage, deleteMessage, discountService, getShop, raiseService, resetDiscountPrice, resetRaisePrice, setCutBPrice, setCutPrice, updateDiscountPriceValue, updateRaisePriceValue, updateShopDataMessage, updateShowMessage } from "../../redux/features/adminPageSlices/shopSettingsSlice";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { socket } from "../../helpers/socketio";
@@ -65,12 +65,21 @@ export default function ShopSettings(){
             setDiscountError(true)
         }
     }
-
+    // sumbit for show message
     const showMessageSubmit = () => {
-        console.log('show submit')
+        if(showMessage.length < 250){
+            dispatch(addMessage(showMessage))
+            setShowMessage(false)
+            dispatch(updateShowMessage(''))            
+        }else{
+            setShowMessageError(true)
+        }
+
     }
+
     const deleteMessageSubmit = () => {
         dispatch(deleteMessage())
+        setShowMessage(false)
     }
     // sockets for raise and discount for all admins
     useEffect( () => {
@@ -82,7 +91,29 @@ export default function ShopSettings(){
         return () => {
             socket.off('sended-shopSettings')
         }
-    },[])
+    },[dispatch])
+    
+    // sockets for getting message coming from database 
+    useEffect(() => {
+        socket.on('sended-message', (message) => {
+            dispatch(updateShopDataMessage(message))
+        })
+
+        return () => {
+            socket.off('sended-message')
+        }
+    },[dispatch])
+
+    // sockets for delete message 
+    useEffect(() => {
+        socket.on('deleted-message', () => {
+            dispatch(updateShopDataMessage(null))
+        })
+
+        return () => {
+            socket.off('deleted-message')
+        }
+    },[dispatch])
 
     return (
         <Container sx={{marginTop:5}}>
@@ -241,7 +272,7 @@ export default function ShopSettings(){
                             multiline
                             rows={4} 
                             value={showMessage}
-                            helperText= {showMessageError === true ? 'Hizmet seçin veya düzgün bir sayı giriniz.' : ''}
+                            helperText= {showMessageError === true ? 'Maksimum 250 karakter girini' : ''}
                             error={showMessageError} 
                             size="small" type="number" required label="Duyuru mesajı" variant="outlined" 
                             fullWidth
