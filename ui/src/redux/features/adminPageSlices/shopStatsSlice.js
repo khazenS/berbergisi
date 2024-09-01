@@ -36,10 +36,6 @@ export const shopStatsSlice = createSlice({
             state.shopStats.daily.income = 0
             state.shopStats.daily.cutCount = 0
             state.shopStats.daily.cutBCount = 0
-
-            state.shopStats.weekly.income -= action.payload.income
-            state.shopStats.weekly.cutCount -= action.payload.cutCount
-            state.shopStats.weekly.cutBCount -= action.payload.cutBCount
         }
     },
     extraReducers: (builder) => {

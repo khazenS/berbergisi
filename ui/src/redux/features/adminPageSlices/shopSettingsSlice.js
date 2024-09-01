@@ -46,7 +46,7 @@ export const deleteMessage = createAsyncThunk('deleteMessage', async () => {
     return response.data
 })
 
-export const addMessage = createAsyncThunk('', async (message) => {
+export const addMessage = createAsyncThunk('addMessage', async (message) => {
     const localToken = localStorage.getItem('adminAccessToken')
     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/add-message',{
         message

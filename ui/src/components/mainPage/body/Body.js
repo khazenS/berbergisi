@@ -41,7 +41,6 @@ function Body() {
     if(changedStatus === true){
       dispatch(getBooking())
     }else if(changedStatus === false){
-      dispatch(closeDayBooking())
       // This is for asycn process bug. Extra and previous datas (user and daily que) seem when close-open shop
       dispatch(resetUserDatas())
       dispatch(resetDailyQueue())

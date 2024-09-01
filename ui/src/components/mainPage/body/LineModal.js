@@ -24,6 +24,7 @@ const style = {
 };
 
 export default function LineModal() {
+  
   const [open, setOpen] = React.useState(false);
   const dispatch = useDispatch()
   // This is for setting errors for fetch data

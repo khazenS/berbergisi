@@ -14,7 +14,8 @@ adminRouter.post('/change-status',async(req,res)=>{
     await shop.save()
     if(!req.body.statusData === false){
         const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
-        console.log(latestDayRecord)
+        latestDayRecord.isClosed = true
+        await latestDayRecord.save()
         res.json({
             status:true,
             newStatus:!req.body.statusData,
@@ -26,6 +27,12 @@ adminRouter.post('/change-status',async(req,res)=>{
             }
         })
     }else{
+        const now = new Date();
+        const offset = now.getTimezoneOffset()
+        const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+        await new DayBooking({
+            existDayDate :  localDate
+        }).save()
         res.json({
             status:true,
             newStatus:!req.body.statusData,
@@ -51,7 +58,6 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
         res.json({
             status:true,
             dailyQue:encryptData([])
-            
         })
     }else{
         const now = new Date()
@@ -91,7 +97,6 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
                 responseArray.push(responseData)
             }
         }
-
         res.json({
             status: true,
             dailyQue : encryptData(responseArray)
@@ -126,7 +131,7 @@ adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     
     if(currentUserBooking.userID === undefined){
         latestRecord.cutCount += 1
-        latestRecord.dailyPaid += shop.cutPrice 
+        latestRecord.dailyPaid += shop.cutPrice
 
         latestMonthRecord.cutCount += 1
         latestMonthRecord.monthlyPaid += shop.cutPrice    
@@ -163,14 +168,14 @@ adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     latestRecord.usersBooking = latestRecord.usersBooking.filter( id => id !== Number(req.params.userBookingID))
     await latestRecord.save()
     await latestMonthRecord.save()
+    console.log(latestRecord)
     res.json({
         status:true,
         userBookingID:Number(req.params.userBookingID),
         bookingToken:currentUserBooking.bookingToken,
-        finishCutDatas:{
+        finishedDatas:{
             cutType:cutType,
-            cutPrice:shop.cutPrice,
-            cutBPrice:shop.cutBPrice
+            comingWith:currentUserBooking.comingWith
         }
     })
 })

@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios'
 import { decryptData } from "../../../helpers/cryptoProcess";
 let initialState  = {
+    shopStatus: null,
     isLoading : false,
     dailyQueue : null,
     dayBookingID : null,
@@ -11,6 +12,12 @@ let initialState  = {
 // Create or get daily booking for show it
 export const getBooking = createAsyncThunk('getBooking',async () => {
     const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/get-dailyBooking')
+    return response.data
+})
+
+// Get shop status
+export const getShopStatus = createAsyncThunk('', async () => {
+    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/getShopStatus')
     return response.data
 })
 
@@ -55,6 +62,19 @@ export const dailyBookingSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
+        // Actions of getShopStatus
+        builder.addCase(getShopStatus.pending,(state) => {
+            state.isLoading = true
+            state.error = false
+        })
+        builder.addCase(getShopStatus.fulfilled,(state,action) => {
+            state.shopStatus = action.payload.shopStatus
+            state.isLoading = false
+        })
+        builder.addCase(getShopStatus.rejected,(state) => {
+            state.error = true
+                              
+        })
         // processes getBooking()
         builder.addCase(getBooking.pending , (state) => {
             state.error = false

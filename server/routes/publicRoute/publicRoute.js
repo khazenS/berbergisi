@@ -33,6 +33,15 @@ publicRouter.get('/shopStatus',async (req,res)=>{
 
 })
 
+//Learn the shop open or close
+publicRouter.get('/getShopStatus',async (req,res)=>{
+    const shop = await Shop.findOne({shopID:1})
+    res.json({
+        status:true,
+        shopStatus: shop.shopStatus
+    })
+})
+
 // User register 
 publicRouter.post('/register-user', async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})

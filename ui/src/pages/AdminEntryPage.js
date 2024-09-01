@@ -19,6 +19,9 @@ function AdminEntryPage(){
     
     const adminExpired = useSelector( state => state.adminLogin.expiredError)
     const shopExpired = useSelector( state => state.shopStatus.expiredError)
+    const bookingExpired = useSelector( state => state.adminBooking.expiredError)
+    const fastOpsExpired = useSelector( state => state.fastOps.expiredError)
+    const shopSettingsExpired = useSelector( state => state.shopSettings.expiredError)
     // When login was succesfully navigate admin panel
     useEffect( () => {
         if(isLogin === true){
@@ -34,7 +37,7 @@ function AdminEntryPage(){
         dispatch(resetCancelExpiredError())
         dispatch(resetFastOpsExpiredError())
         dispatch(resetShopSettingsExpiredError())
-    },[dispatch,adminExpired,shopExpired])
+    },[dispatch,adminExpired,shopExpired,bookingExpired,fastOpsExpired,shopSettingsExpired])
     return (
         <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh' }}>
             <Paper elevation={24} sx={{ height: '50vh', width: '40vh',display:'flex' }}>

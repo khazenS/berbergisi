@@ -21,7 +21,6 @@ function Row(props){
     }
 
     const handleFinishCut = (userBookingID) => {
-        
         dispatch(cutFinished(userBookingID))
     }
 
@@ -137,7 +136,6 @@ export default function AdminQueTable(){
     // Listen socket for adding new user to que then print it out
     useEffect(()=>{
         socket.on('newUser',(user) => {
-          console.log(user)
           dispatch(addNewUser(user))
         })
     
@@ -238,9 +236,6 @@ export default function AdminQueTable(){
                                 {// Table body part
                                 }
                                 <TableBody>
-                                    {
-                                        console.log(dailyQueue)
-                                    }
                                     {
                                         dailyQueue.map( (user) => {
                                             return (

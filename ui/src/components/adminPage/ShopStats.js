@@ -18,6 +18,7 @@ export default function ShopStats(){
     useEffect( () => {
         socket.on('changedStatus', (datas) => {
             if(datas.status === false){
+                console.log(datas)
                 dispatch(closeShopAction(datas.lastDayStats))
             }
         })
@@ -26,6 +27,25 @@ export default function ShopStats(){
             socket.off('changedStatus')
         }
     },[dispatch])
+
+    // cut finished socket 
+    useEffect( () => {
+        socket.on('finished-cut',(datas) => {
+            let income = null
+            if(datas.finishedDatas.cutType === 'cut'){
+                income += shopDatas.cutPrice
+            }else{
+                income += shopDatas.cutBPrice
+            }
+            income += (datas.finishedDatas.comingWith - 1) * shopDatas.cutPrice
+            console.log(income)
+        })
+    },[])
+    //deneme    
+    const shopDatas = useSelector( state => state.shopSettings.shopData)
+    useEffect( () => {
+        console.log(shopDatas)
+    },[shopDatas])
     return (
         <>
         {

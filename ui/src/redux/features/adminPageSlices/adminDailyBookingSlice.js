@@ -131,7 +131,7 @@ export const adminDayBookingSlice = createSlice({
         })
         builder.addCase(cutFinished.fulfilled, (state,action) => {
             if(action.payload.status === true){
-                socket.emit('finish-cut',{userBookingID:action.payload.userBookingID,bookingToken:action.payload.bookingToken})
+                socket.emit('finish-cut',{userBookingID:action.payload.userBookingID,bookingToken:action.payload.bookingToken,finishedDatas:action.payload.finishedDatas})
             }else{
                 state.expiredError = true
             }
