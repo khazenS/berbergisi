@@ -94,7 +94,7 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(raiseService.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                socket.emit('get-shopSttings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
+                socket.emit('get-shopSettings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
             }else{
                 state.expiredError = true
             }
@@ -111,7 +111,7 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(discountService.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                socket.emit('get-shopSttings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
+                socket.emit('get-shopSettings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
             }else{
                 state.expiredError = true
             }

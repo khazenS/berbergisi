@@ -24,7 +24,7 @@ function AdminPage() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (tokenError) {
+        if (tokenError === true) {
             navigate('/adminLogin');
         }
     }, [tokenError, navigate]);

@@ -10,28 +10,6 @@ import { Admin } from '../../database/schemas/adminSchema.js';
 
 const publicRouter = express.Router()
 
-//Learn the shop open or close
-publicRouter.get('/shopStatus',async (req,res)=>{
-    const shop = await Shop.findOne({shopID:1})
-    if(!shop){
-        await new Shop({
-            shopStatus:false,
-            cutPrice:200,
-            cutBPrice:250,
-            showMessage:null
-        }).save()
-        res.json({
-            status:true,
-            shopStatus:false
-        })
-    }else{
-        res.json({
-            status:true,
-            shopStatus: shop.shopStatus
-        })
-    }
-
-})
 
 //Learn the shop open or close
 publicRouter.get('/getShopStatus',async (req,res)=>{
@@ -140,84 +118,38 @@ publicRouter.post('/register-user', async (req,res) => {
 
 // If exists get daily booking or create new one
 publicRouter.get('/get-dailyBooking', async (req,res) => {
-    const now = new Date();
-    // It is giving difference between UTC time and local time in type of minute so now its logging -180 
-    const offset = now.getTimezoneOffset()
-    // Translating to local date
-    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
-    const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
-
-    // getting latest dayBooking data foor check is over or not
-    if(latestRecord === null || latestRecord.isClosed === true){
-        const newDayBooking = await new DayBooking({
-            existDayDate :  localDate
-        }).save()        
-        const currentMonthRecord = await MonthBooking.findOne({existMonthDate:monthDate})
-
-        // Checking current moonth exist or not then to save new day booking into it
-        if(currentMonthRecord){
-            currentMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
-            await currentMonthRecord.save()
-        }        
-        else{
-            const newMonthRecord = await new MonthBooking({
-                existMonthDate: monthDate
-            })
-            newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
-            await newMonthRecord.save()
-        }
-
-        res.json({
-            status:true,
-            dailyQue:encryptData(newDayBooking.usersBooking),
-            dayBookingID: encryptData(newDayBooking.dayBookingID)
-        })
-    }else{
-        const responseArray = []
-        for(const userBookingID of latestRecord.usersBooking){
-            const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
-            if(currentUserBooking.userID === undefined){
-                const responseData = {
-                    name:currentUserBooking.name,
-                    cutType:currentUserBooking.cutType,
-                    comingWith:currentUserBooking.comingWith,
-                    userBookingID:userBookingID
-                }
-                responseArray.push(responseData)
-            }else{
-                const currentUser = await User.findOne({userID:currentUserBooking.userID})
-                const responseData = {
-                    name:currentUser.name,
-                    cutType:currentUserBooking.cutType,
-                    comingWith:currentUserBooking.comingWith,
-                    userBookingID:userBookingID
-                }
-                responseArray.push(responseData)
-            }
-        }
-        res.json({
-            status: true,
-            dailyQue : encryptData(responseArray),
-            dayBookingID: encryptData(latestRecord.dayBookingID),
-        })
-    }
     
-})
-
-// Close daily booking and update daily cut counts
-publicRouter.get('/close-dailyBooking' , async (req,res) => {
-    const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
-    if(latestRecord.isClosed === false){
-        const shop = await Shop.findOne({shopID:1})
-        latestRecord.dailyPaid += shop.cutPrice * latestRecord.cutCount
-        latestRecord.dailyPaid += shop.cutBPrice * latestRecord.cutBCount
-        latestRecord.isClosed = true
-        await latestRecord.save()
+    const responseArray = []
+    for(const userBookingID of latestRecord.usersBooking){
+        const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
+        if(currentUserBooking.userID === undefined){
+            const responseData = {
+                name:currentUserBooking.name,
+                cutType:currentUserBooking.cutType,
+                comingWith:currentUserBooking.comingWith,
+                userBookingID:userBookingID
+            }
+            responseArray.push(responseData)
+        }else{
+            const currentUser = await User.findOne({userID:currentUserBooking.userID})
+            const responseData = {
+                name:currentUser.name,
+                cutType:currentUserBooking.cutType,
+                comingWith:currentUserBooking.comingWith,
+                userBookingID:userBookingID
+            }
+            responseArray.push(responseData)
+        }
     }
+
     res.json({
-        status:true
+        status: true,
+        dailyQue : encryptData(responseArray),
+        dayBookingID: encryptData(latestRecord.dayBookingID),
     })
+
+    
 })
 
 // Check the que token when page uploaded
@@ -240,12 +172,10 @@ publicRouter.post('/check-queue-token', async (req,res) => {
 // Controlling queueToken for cancel the order and then cancel
 publicRouter.post('/cancel-queue', async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
-    console.log(tokenBody)
     if(tokenBody !== false){
         
         const userBooking = await UserBooking.findOne({userBookingID:tokenBody.userBookingID})
         const dayBooking = await DayBooking.findOne({dayBookingID:tokenBody.dayBookingID})
-        console.log(dayBooking.usersBooking)
         if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
             dayBooking.usersBooking = dayBooking.usersBooking.filter( userBookingID => userBookingID !== userBooking.userBookingID)
             await dayBooking.save()

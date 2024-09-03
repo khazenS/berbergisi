@@ -61,7 +61,6 @@ export const fastOpsSlice = createSlice({
             if(action.payload.status === true){ 
                 socket.emit('fastUser-register',{fastUserDatas: decryptData(action.payload.fastUserDatas)})
             }else{ 
-                console.log('expired error') 
                 state.expiredError = true 
             }
             state.isLoading = false

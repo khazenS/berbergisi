@@ -32,10 +32,26 @@ export const shopStatsSlice = createSlice({
     name:'shopStatsSlice',
     initialState,
     reducers:{
-        closeShopAction : (state,action) => {
+        resetDaily : (state) => {
             state.shopStats.daily.income = 0
             state.shopStats.daily.cutCount = 0
             state.shopStats.daily.cutBCount = 0
+        },
+        newFinishedCut : (state,action) => {
+            state.shopStats.daily.income += action.payload.income
+            state.shopStats.weekly.income += action.payload.income
+            state.shopStats.monthlyIncome += action.payload.income
+            state.shopStats.yearlyIncome += action.payload.income
+
+            if(action.payload.cutType === 'cut'){
+                state.shopStats.daily.cutCount += 1
+                state.shopStats.weekly.cutCount += 1
+            }else{
+                state.shopStats.daily.cutBCount += 1
+                state.shopStats.weekly.cutBCount += 1
+            }
+            state.shopStats.daily.cutCount += (action.payload.comingWith - 1)
+            state.shopStats.weekly.cutCount += (action.payload.comingWith - 1)
         }
     },
     extraReducers: (builder) => {
@@ -66,5 +82,5 @@ export const shopStatsSlice = createSlice({
 })
 
 
-export const {closeShopAction} = shopStatsSlice.actions
+export const {resetDaily,newFinishedCut} = shopStatsSlice.actions
 export default shopStatsSlice.reducer

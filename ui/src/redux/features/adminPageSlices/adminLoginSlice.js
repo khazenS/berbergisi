@@ -80,6 +80,10 @@ export const adminLoginSlice = createSlice({
             state.isLogin = false
             
         })
+        builder.addCase(controlAdminAccessToken.rejected, (state) => {
+            state.error = true
+            console.error('Error on controlAccessToken')
+        })
     }
 })
 

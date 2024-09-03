@@ -20,24 +20,35 @@ adminRouter.post('/change-status',async(req,res)=>{
             status:true,
             newStatus:!req.body.statusData,
             message:"shopStatus was updated",
-            lastDayStats:{
-                income:latestDayRecord.dailyPaid,
-                cutCount:latestDayRecord.cutCount,
-                cutBCount: latestDayRecord.cutBCount
-            }
         })
     }else{
-        const now = new Date();
+        const now = new Date()
+        // It is giving difference between UTC time and local time in type of minute so now its logging -180 
         const offset = now.getTimezoneOffset()
         const localDate = new Date(now.getTime() - (offset * 60 * 1000))
-        await new DayBooking({
+        const newDayBooking = await new DayBooking({
             existDayDate :  localDate
         }).save()
+
+        const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
+        const currentMonthRecord = await MonthBooking.findOne({existMonthDate:monthDate})
+        // Checking current month exist or not then to save new day booking into it
+        if(currentMonthRecord){
+            currentMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await currentMonthRecord.save()
+        }        
+        else{
+            const newMonthRecord = await new MonthBooking({
+                existMonthDate: monthDate
+            })
+            newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await newMonthRecord.save()
+        }
+
         res.json({
             status:true,
             newStatus:!req.body.statusData,
-            message:"shopStatus was updated",
-            lastDayStats:null
+            message:"shopStatus was updated"
         })        
     }
 
@@ -168,14 +179,19 @@ adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     latestRecord.usersBooking = latestRecord.usersBooking.filter( id => id !== Number(req.params.userBookingID))
     await latestRecord.save()
     await latestMonthRecord.save()
-    console.log(latestRecord)
+    
+    // These are for shown stats on ui
+    let income = currentUserBooking.cutType === 'cut' ? shop.cutPrice : shop.cutBPrice
+    income +=  (currentUserBooking.comingWith - 1) * shop.cutPrice
+    
     res.json({
         status:true,
         userBookingID:Number(req.params.userBookingID),
         bookingToken:currentUserBooking.bookingToken,
         finishedDatas:{
             cutType:cutType,
-            comingWith:currentUserBooking.comingWith
+            income:income,
+            comingWith:comingWith
         }
     })
 })
@@ -358,7 +374,7 @@ adminRouter.post('/add-message' , async (req,res) => {
 // get all stats
 adminRouter.get('/get-stats', async (req,res) => {
     // date 
-    const now = new Date();
+    const now = new Date()
     const offset = now.getTimezoneOffset()
     
     const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
@@ -374,47 +390,66 @@ adminRouter.get('/get-stats', async (req,res) => {
         }
     })
 
-    let weeklyIncome = 0
-    let weeklyCCount = 0
-    let weeklyCBCount = 0
-    weeklyRecords.forEach(day => {
-        weeklyIncome += day.dailyPaid
-        weeklyCCount += day.cutCount
-        weeklyCBCount += day.cutBCount
+    if(latestDailyRecord === null){
+        res.json({
+            status:true,
+            stats:encryptData({
+                daily:{
+                    income:0,
+                    cutCount:0,
+                    cutBCount:0
+                },
+                weekly : {
+                    income :0,
+                    cutCount : 0,
+                    cutBCount : 0
+                },
+                monthlyIncome : 0,
+                yearlyIncome : 0            
+            }
+        )})
+    }else{
+        let weeklyIncome = 0
+        let weeklyCCount = 0
+        let weeklyCBCount = 0
+        weeklyRecords.forEach(day => {
+            weeklyIncome += day.dailyPaid
+            weeklyCCount += day.cutCount
+            weeklyCBCount += day.cutBCount
 
-    });
-    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
-    const yearlyRecords = await MonthBooking.find({
-        existMonthDate:{
-            $gte: lastYearDate,
-            $lt:localNowDate
-        }
-    })
-    
-    let yearlyIncome = 0
-    yearlyRecords.forEach(month => {
-        yearlyIncome += month.monthlyPaid
-    });
-    
-    
-    res.json({
-        status:true,
-        stats:encryptData({
-            daily:{
-                income:latestDailyRecord.dailyPaid,
-                cutCount:latestDailyRecord.cutCount,
-                cutBCount:latestDailyRecord.cutBCount
-            },
-            weekly : {
-                income : weeklyIncome,
-                cutCount : weeklyCCount,
-                cutBCount : weeklyCBCount
-            },
-            monthlyIncome : latestMonthRecord.monthlyPaid,
-            yearlyIncome : yearlyIncome            
-        }
-    )
-
+        });
+        const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
+        const yearlyRecords = await MonthBooking.find({
+            existMonthDate:{
+                $gte: lastYearDate,
+                $lt:localNowDate
+            }
+        })
         
-    })
+        let yearlyIncome = 0
+        yearlyRecords.forEach(month => {
+            yearlyIncome += month.monthlyPaid
+        });
+        
+        
+        res.json({
+            status:true,
+            stats:encryptData({
+                daily:{
+                    income:latestDailyRecord.dailyPaid,
+                    cutCount:latestDailyRecord.cutCount,
+                    cutBCount:latestDailyRecord.cutBCount
+                },
+                weekly : {
+                    income : weeklyIncome,
+                    cutCount : weeklyCCount,
+                    cutBCount : weeklyCBCount
+                },
+                monthlyIncome : latestMonthRecord.monthlyPaid,
+                yearlyIncome : yearlyIncome            
+            }
+        )})        
+    }
+
+
 })

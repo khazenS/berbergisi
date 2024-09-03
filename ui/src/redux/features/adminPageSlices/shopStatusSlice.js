@@ -24,7 +24,7 @@ export const changeStatus = createAsyncThunk('changeStatus',async (statusData)=>
 })
 
 export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
-    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/shopStatus')
+    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/getShopStatus')
     return response.data
 })
 
@@ -62,7 +62,7 @@ export const shopStatusSlice = createSlice({
                 state.expiredError = true
             }else{
                state.status = action.payload.newStatus
-               socket.emit('changeStatus', {status: state.status , lastDayStats : action.payload.lastDayStats });
+               socket.emit('changeStatus', {status: state.status});
             }
             state.changeRequest.isLoading =false
             

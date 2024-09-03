@@ -1,29 +1,31 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { defineStatus } from "../../../redux/features/adminPageSlices/shopStatusSlice";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
-import { closeDayBooking, getBooking, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { getBooking, getShopStatus, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import InfoBoxes from "./InfoBoxes.js";
 import LineTable from "./LineTable.js";
 
 function Body() {
   const dispatch = useDispatch()
-
-  const shopStatusState = useSelector((state) => state.shopStatus)
+  const shopStatus = useSelector(state => state.booking.shopStatus)
   const [changedStatus,setStatus] = useState(null)
 
   const dailyBookingState = useSelector(state => state.booking)
+  
   //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
-    dispatch(defineStatus());
-    setStatus(shopStatusState.status)
-  }, [dispatch,shopStatusState.status]);
+    dispatch(getShopStatus())
+  }, [dispatch]);
+
+  useEffect(() => {
+    setStatus(shopStatus)
+  },[shopStatus])
 
   // We listen 'changedStatus' socket and set value to changedStatus state
   useEffect(()=>{
@@ -49,7 +51,7 @@ function Body() {
       localStorage.removeItem('queueToken')
     }
   },[dispatch,changedStatus])
-  if (shopStatusState.defineRequest.isLoading === true || shopStatusState.status === null || dailyBookingState === true ) {
+  if (dailyBookingState.isLoading === true || changedStatus === null ) {
     return (
       <Box
         sx={{
@@ -62,7 +64,7 @@ function Body() {
         <CircularProgress />
       </Box>
     );
-  } else if (shopStatusState.defineRequest.error || dailyBookingState.error) {
+  } else if (dailyBookingState.error) {
     return (
       <div>
         <Stack

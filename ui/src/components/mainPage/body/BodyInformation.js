@@ -15,10 +15,6 @@ function BodyInformation(){
         dispatch(getMessage())
     },[dispatch])
 
-    useEffect( () => {
-        console.log(message) 
-    },[message])
-
     // new message socket
     useEffect( () => {
         socket.on('sended-message', (message) => {

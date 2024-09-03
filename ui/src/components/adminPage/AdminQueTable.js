@@ -25,13 +25,11 @@ function Row(props){
     }
 
     const handleUpMove = () => {
-        console.log('up move')
         dispatch(upMoveReq(dailyQueue.indexOf(row)))
         setOpen(false)
     }
 
     const handleDownMove = () => {
-        console.log('down move')
         dispatch(downMoveReq(dailyQueue.indexOf(row)))
         setOpen(false)
     }

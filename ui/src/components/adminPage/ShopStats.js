@@ -1,51 +1,41 @@
 import { Box, CircularProgress, Container, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getStats, closeShopAction } from "../../redux/features/adminPageSlices/shopStatsSlice";
+import { getStats, newFinishedCut, resetDaily } from "../../redux/features/adminPageSlices/shopStatsSlice";
 import { socket } from "../../helpers/socketio";
 
 export default function ShopStats(){
     const dispatch = useDispatch()
     const shopStats = useSelector(state => state.shopStats.shopStats)
     const isLoading = useSelector( state => state.shopStats.isLoading)
-
+    
     // Getting all stats
     useEffect( () => {
         dispatch(getStats())
-    },[])
-
+    },[dispatch])
     // When status changed socket
     useEffect( () => {
         socket.on('changedStatus', (datas) => {
-            if(datas.status === false){
-                console.log(datas)
-                dispatch(closeShopAction(datas.lastDayStats))
+            if(datas.status === true){
+                dispatch(resetDaily())
             }
         })
-
         return () => {
             socket.off('changedStatus')
         }
-    },[dispatch])
+    },[])
 
     // cut finished socket 
     useEffect( () => {
         socket.on('finished-cut',(datas) => {
-            let income = null
-            if(datas.finishedDatas.cutType === 'cut'){
-                income += shopDatas.cutPrice
-            }else{
-                income += shopDatas.cutBPrice
-            }
-            income += (datas.finishedDatas.comingWith - 1) * shopDatas.cutPrice
-            console.log(income)
+            dispatch(newFinishedCut({income:datas.finishedDatas.income,cutType:datas.finishedDatas.cutType,comingWith:datas.finishedDatas.comingWith}))
         })
+
+        return () => {
+            socket.off('finished-cut')
+        }
     },[])
-    //deneme    
-    const shopDatas = useSelector( state => state.shopSettings.shopData)
-    useEffect( () => {
-        console.log(shopDatas)
-    },[shopDatas])
+
     return (
         <>
         {

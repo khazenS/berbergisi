@@ -43,5 +43,5 @@ app.use(accessMiddleware)
 app.use("/api/admin",adminRouter)
 
 server.listen(process.env.PORT, '0.0.0.0',() => {
-    console.log('uygulama suanda ',process.env.PORT,' portunda calisiyor')
+  console.log('uygulama suanda ',process.env.PORT,' portunda calisiyor')
 })

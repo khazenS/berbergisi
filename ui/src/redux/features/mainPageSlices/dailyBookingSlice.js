@@ -16,16 +16,11 @@ export const getBooking = createAsyncThunk('getBooking',async () => {
 })
 
 // Get shop status
-export const getShopStatus = createAsyncThunk('', async () => {
+export const getShopStatus = createAsyncThunk('getShopStatus', async () => {
     const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/getShopStatus')
     return response.data
 })
 
-// Closing daily booking on database 
-export const closeDayBooking = createAsyncThunk('closeDayBooking', async () => {
-    const response = await axios.get(process.env.REACT_APP_SERVER_URL+'public/close-dailyBooking')
-    return response.data
-})
 
 export const dailyBookingSlice = createSlice({
     name: 'dailyBookingSlice',
@@ -73,7 +68,7 @@ export const dailyBookingSlice = createSlice({
         })
         builder.addCase(getShopStatus.rejected,(state) => {
             state.error = true
-                              
+            console.error('Error on getShopStatus')
         })
         // processes getBooking()
         builder.addCase(getBooking.pending , (state) => {
@@ -84,22 +79,10 @@ export const dailyBookingSlice = createSlice({
             state.dailyQueue = decryptData(action.payload.dailyQue)
             state.dayBookingID = decryptData(action.payload.dayBookingID)
             state.isLoading = false
-            
         })
         builder.addCase(getBooking.rejected , (state) => {
             state.error = true
             console.log('Rejedted from getBooking request!')
-        })
-        // processes closeDayBooking()
-        builder.addCase(closeDayBooking.pending,(state) => {
-            state.isLoading = true
-        })
-        builder.addCase(closeDayBooking.fulfilled,(state) => {
-            state.isLoading = false
-        })
-        builder.addCase(closeDayBooking.rejected,(state) => {
-            state.error = true
-            console.log('Rejedted from closeDayBooking request!')
         })
     }
 })

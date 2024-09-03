@@ -44,7 +44,7 @@ const setupSocket = (io) => {
             io.emit('fastUser-registered', datas.fastUserDatas)
         })
         // shop settings socket for admin process
-        socket.on('get-shopSttings',(datas) =>{
+        socket.on('get-shopSettings',(datas) =>{
             io.emit('sended-shopSettings', datas)
         })
         // show message socket for admin process
