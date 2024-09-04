@@ -95,3 +95,21 @@ Actually this app provide features for business owner. Closing shop whenever wan
 - If shop was open , you can fast call to user , cancel the user order , cut finished button remove user but it effects the shop stats was shown , manupulate the order line
 
   ![image](https://github.com/user-attachments/assets/8ad802cb-56ea-4c4e-ad90-fb1dfec424be)
+
+- There are also fast operations for shop worker. If you know the costumer and the costumer dont want to take order for a reason you can also add the costumer on here he has no phone number on admin panel.And also you can increase or decrease income for stats
+
+  ![image](https://github.com/user-attachments/assets/a4559a42-fd26-4e65-a71b-46eacf193651)
+
+- Shop settings section has raise price of services or discount price of services and publishing an announcement.
+
+![image](https://github.com/user-attachments/assets/82a3dfc0-856c-4ed5-8237-9b665f981c47)
+
+> The announcement is looking like that on main page:
+
+![image](https://github.com/user-attachments/assets/beae9d62-2f6b-4b44-8a86-9d2048044df1)
+
+- Getting stats of the shop
+
+![image](https://github.com/user-attachments/assets/8d98caec-ceb8-47e7-aac6-933340b848c2)
+
+
