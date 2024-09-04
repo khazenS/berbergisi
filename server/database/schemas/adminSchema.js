@@ -6,4 +6,4 @@ const adminSchema = new mongoose.Schema({
     adminAccessToken:String
 })
 
-export const Admin = mongoose.model('Admin',adminSchema,'admin')
+export const Admin = mongoose.model('Admin',adminSchema,'Admin')
