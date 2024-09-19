@@ -3,6 +3,7 @@ import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
 import LineModal from "./LineModal.js";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { jwtDecode } from "jwt-decode";
 
 
 function InfoBoxes(){
@@ -12,9 +13,35 @@ function InfoBoxes(){
 
     const dailyQue = useSelector( state => state.booking.dailyQueue )
 
+    // queueToken
+    const queueToken = localStorage.getItem('queueToken')
+    let decodedToken = null
+
+    if(queueToken !== null){
+      decodedToken = jwtDecode(queueToken)
+    }
+
     // print out the count of costumer of the line
     useEffect(() => {
-        if (dailyQue) {
+        if(decodedToken !== null && dailyQue){
+            let totalCostumer = 0
+            let totalMunite = 0
+            // This is for just calculating front order datas of specified customer
+            const index = dailyQue.findIndex(person => person.userBookingID === decodedToken.userBookingID)
+            const newDailyQue = dailyQue.slice(0,index)
+            console.log(newDailyQue)
+
+
+            for(const queCostumer of newDailyQue){
+                totalCostumer += queCostumer.comingWith
+                queCostumer.cutType === 'cut' ? totalMunite += 30 : totalMunite += 45
+                totalMunite += (queCostumer.comingWith - 1) * 30
+            }
+            setEstimatedHour((totalMunite / 60) | 0)
+            setEstimatedMunite(totalMunite % 60)
+            setCostumer(totalCostumer)
+        }
+        else if (dailyQue) {
             let totalCostumer = 0
             let totalMunite = 0
             for(const queCostumer of dailyQue){

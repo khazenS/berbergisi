@@ -3,11 +3,21 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { downMove, newUserToQue, removeUserFromQue, upMove } from "../../../redux/features/mainPageSlices/dailyBookingSlice";
 import { socket } from "../../../helpers/socketio.js";
+import { jwtDecode } from "jwt-decode";
 
 export default function LineTable(){
     const dispatch = useDispatch()
     const dailyQue = useSelector( state => state.booking.dailyQueue )
     const userDatas = useSelector( state => state.register.userDatas)
+
+    // queueToken
+    const queueToken = localStorage.getItem('queueToken')
+    let decodedToken = null
+
+    if(queueToken !== null){
+      decodedToken = jwtDecode(queueToken)
+    }
+    
     useEffect(() => {
         if(userDatas){
           // Sending userDatas to all client
@@ -86,11 +96,18 @@ export default function LineTable(){
                     </TableHead>
                     <TableBody>
                         {dailyQue.map((data) => (
-                                <TableRow key={dailyQue.indexOf(data)}>
-                                    <TableCell>{dailyQue.indexOf(data) + 1}</TableCell>
-                                    <TableCell align="center">{data.name}</TableCell>
-                                    <TableCell align="center">{data.comingWith}</TableCell>
-                                </TableRow>
+                          queueToken !== null && data.userBookingID === decodedToken.userBookingID ? 
+                          <TableRow key={dailyQue.indexOf(data)} sx={{ border: '2px solid red' }}>
+                            <TableCell >{dailyQue.indexOf(data) + 1}</TableCell>
+                            <TableCell align="center">{data.name}</TableCell>
+                            <TableCell align="center">{data.comingWith}</TableCell>
+                          </TableRow>
+                          :
+                          <TableRow key={dailyQue.indexOf(data)}>
+                            <TableCell>{dailyQue.indexOf(data) + 1}</TableCell>
+                            <TableCell align="center">{data.name}</TableCell>
+                            <TableCell align="center">{data.comingWith}</TableCell>
+                          </TableRow>
                         ))
                         }
                     </TableBody>

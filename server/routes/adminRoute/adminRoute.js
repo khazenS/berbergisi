@@ -1,10 +1,10 @@
-import express from 'express'
-import { Shop } from '../../database/schemas/shopSchema.js'
-import { DayBooking } from '../../database/schemas/dayBookingSchema.js'
-import { encryptData } from '../../helpers/cryptoProcess.js'
-import { UserBooking } from '../../database/schemas/userBookingSchema.js'
-import { User } from '../../database/schemas/userSchema.js'
-import { MonthBooking } from '../../database/schemas/monthBookingSchema.js'
+const express = require('express');
+const { Shop } = require('../../database/schemas/shopSchema.js');
+const { DayBooking } = require('../../database/schemas/dayBookingSchema.js');
+const { encryptData } = require('../../helpers/cryptoProcess.js');
+const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
+const { User } = require('../../database/schemas/userSchema.js');
+const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
 const adminRouter = express.Router()
 
 // Changin status for shop opening or closing
@@ -267,7 +267,6 @@ adminRouter.post('/fast-register',async (req,res) => {
         })
     })
 })
-export default adminRouter;
 
 // increase amount as costum on ui
 adminRouter.post('/increase-amount', async (req,res) => {
@@ -299,7 +298,7 @@ adminRouter.post('/decrease-amount', async (req,res) => {
     await latestMonthRecord.save()
     res.json({
         status:true,
-        increasedAmount:amount
+        decreasedAmount:amount
     })
 })
 
@@ -453,3 +452,4 @@ adminRouter.get('/get-stats', async (req,res) => {
 
 
 })
+module.exports = adminRouter;

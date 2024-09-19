@@ -1,7 +1,7 @@
 import { Box, CircularProgress, Container, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getStats, newFinishedCut, resetDaily } from "../../redux/features/adminPageSlices/shopStatsSlice";
+import { decreaseAmountStats, getStats, increaseAmountStats, newFinishedCut, resetDaily } from "../../redux/features/adminPageSlices/shopStatsSlice";
 import { socket } from "../../helpers/socketio";
 
 export default function ShopStats(){
@@ -35,6 +35,30 @@ export default function ShopStats(){
             socket.off('finished-cut')
         }
     },[])
+
+    // increased amount socket
+
+    useEffect( ()=> {
+        socket.on('increased-amount', (amount) => {
+            dispatch(increaseAmountStats(amount))
+        })
+
+        return () => {
+            socket.off('increased-amount')
+        }
+    },[dispatch])
+
+    // decreased amount socket
+
+    useEffect( ()=> {
+        socket.on('decreased-amount', (amount) => {
+            dispatch(decreaseAmountStats(amount))
+        })
+
+        return () => {
+            socket.off('decreased-amount')
+        }
+    },[dispatch])
 
     return (
         <>

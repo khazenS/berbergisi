@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken'
+const jwt = require('jsonwebtoken');
 
 // Admin token processes
-export function getTokenforAdmin(){
+function getTokenforAdmin(){
     const token = jwt.sign({
         type:'admin',
         expiresTime:'1w'
@@ -10,7 +10,7 @@ export function getTokenforAdmin(){
     return token
 }
 
-export function verificationToken(firstToken){
+function verificationToken(firstToken){
     let response = ""
     jwt.verify(firstToken,process.env.JWT_SECRET, (err,decode) => {
         if (err) {
@@ -25,7 +25,7 @@ export function verificationToken(firstToken){
 }
 
 // Que token processes
-export function getTokenforQue(userBookingID,dayBookingID){
+function getTokenforQue(userBookingID,dayBookingID){
     const token = jwt.sign({
         type:'Queue',
         userBookingID,
@@ -35,7 +35,7 @@ export function getTokenforQue(userBookingID,dayBookingID){
     return token
 }
 
-export function verificationQueToken(firstToken){
+function verificationQueToken(firstToken){
     let response = ""
     jwt.verify(firstToken,process.env.JWT_SECRET_QUE, (err,decode) => {
         if (err) {
@@ -47,4 +47,11 @@ export function verificationQueToken(firstToken){
     })
 
     return response 
+}
+
+module.exports = {
+    getTokenforAdmin,
+    verificationToken,
+    getTokenforQue,
+    verificationQueToken
 }

@@ -1,12 +1,12 @@
-import express from 'express'
-import { getTokenforAdmin, getTokenforQue, verificationQueToken } from '../../helpers/jwtProcesses.js'
-import { Shop } from '../../database/schemas/shopSchema.js';
-import { User } from '../../database/schemas/userSchema.js';
-import { DayBooking } from '../../database/schemas/dayBookingSchema.js';
-import { encryptData } from '../../helpers/cryptoProcess.js';
-import { MonthBooking } from '../../database/schemas/monthBookingSchema.js';
-import { UserBooking } from '../../database/schemas/userBookingSchema.js';
-import { Admin } from '../../database/schemas/adminSchema.js';
+const express = require('express');
+const { getTokenforAdmin, getTokenforQue, verificationQueToken } = require('../../helpers/jwtProcesses.js');
+const { Shop } = require('../../database/schemas/shopSchema.js');
+const { User } = require('../../database/schemas/userSchema.js');
+const { DayBooking } = require('../../database/schemas/dayBookingSchema.js');
+const { encryptData } = require('../../helpers/cryptoProcess.js');
+const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
+const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
+const { Admin } = require('../../database/schemas/adminSchema.js');
 
 const publicRouter = express.Router()
 
@@ -227,4 +227,4 @@ publicRouter.get('/get-message', async (req,res) => {
         message:message
     })
 })
-export default publicRouter
+module.exports = publicRouter

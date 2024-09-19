@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const dbConnection = () => {
     mongoose.connect(process.env.DB_URL, {
-        dbName:"barberDatabase"
+        dbName:"Deneme"
     }).then(() => {
         console.log("Connected to DB successfully")
     }).catch((err) => {
@@ -10,4 +10,4 @@ const dbConnection = () => {
     })
 }
 
-export default dbConnection
+module.exports = dbConnection

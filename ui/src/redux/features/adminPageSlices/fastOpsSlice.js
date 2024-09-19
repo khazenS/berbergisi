@@ -76,7 +76,7 @@ export const fastOpsSlice = createSlice({
         })
         builder.addCase(increaseAmount.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                console.log('increased amount!')
+                socket.emit('increase-amount',action.payload.increasedAmount)
             }else{
                 state.expiredError = true
             }
@@ -93,7 +93,7 @@ export const fastOpsSlice = createSlice({
         })
         builder.addCase(decreaseAmount.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                console.log('decreased amount!')
+                socket.emit('decrease-amount',action.payload.decreasedAmount)
             }else{
                 state.expiredError = true
             }

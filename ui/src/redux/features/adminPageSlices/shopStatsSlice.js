@@ -1,6 +1,7 @@
 import {  createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
 import { decryptData } from "../../../helpers/cryptoProcess"
+
 const initialState = {
     isLoading : false,
     error : false,
@@ -52,6 +53,18 @@ export const shopStatsSlice = createSlice({
             }
             state.shopStats.daily.cutCount += (action.payload.comingWith - 1)
             state.shopStats.weekly.cutCount += (action.payload.comingWith - 1)
+        },
+        increaseAmountStats : (state,action) => {
+            state.shopStats.daily.income += action.payload
+            state.shopStats.weekly.income += action.payload
+            state.shopStats.monthlyIncome += action.payload
+            state.shopStats.yearlyIncome += action.payload
+        },
+        decreaseAmountStats : (state,action) => {
+            state.shopStats.daily.income -= action.payload
+            state.shopStats.weekly.income -= action.payload
+            state.shopStats.monthlyIncome -= action.payload
+            state.shopStats.yearlyIncome -= action.payload
         }
     },
     extraReducers: (builder) => {
@@ -82,5 +95,5 @@ export const shopStatsSlice = createSlice({
 })
 
 
-export const {resetDaily,newFinishedCut} = shopStatsSlice.actions
+export const {resetDaily,newFinishedCut,increaseAmountStats,decreaseAmountStats} = shopStatsSlice.actions
 export default shopStatsSlice.reducer

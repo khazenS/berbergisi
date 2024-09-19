@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+const mongoose = require('mongoose')
 
 const shopSchema= new mongoose.Schema({
     shopID:{
@@ -12,4 +12,6 @@ const shopSchema= new mongoose.Schema({
     showMessage:String
 })
 
-export const Shop = mongoose.model('Shop',shopSchema,'Shop')
+const Shop = mongoose.model('Shop',shopSchema,'Shop')
+
+module.exports = {Shop}

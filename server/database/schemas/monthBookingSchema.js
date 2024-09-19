@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import mongooseSequence from 'mongoose-sequence'
+const mongoose = require("mongoose");
+const mongooseSequence = require('mongoose-sequence')
 
 const AutoIncrement = mongooseSequence(mongoose)
 
@@ -29,4 +29,6 @@ const monthBookingSchema = new mongoose.Schema({
 
 monthBookingSchema.plugin(AutoIncrement,{inc_field: 'monthBookingID' })
 
-export const MonthBooking = mongoose.model('MonthBooking',monthBookingSchema,'MonthBooking')
+const MonthBooking = mongoose.model('MonthBooking',monthBookingSchema,'MonthBooking');
+
+module.exports = {MonthBooking};

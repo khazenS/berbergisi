@@ -24,6 +24,10 @@ function AdminPage() {
     }, [dispatch]);
 
     useEffect(() => {
+        console.log('gökdeniz')
+    },[])
+    
+    useEffect(() => {
         if (tokenError === true) {
             navigate('/adminLogin');
         }

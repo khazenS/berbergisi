@@ -1,4 +1,4 @@
-import { io } from "../app.js"
+
 
 const setupSocket = (io) => {
     io.on('connection',(socket) => {
@@ -55,7 +55,15 @@ const setupSocket = (io) => {
         socket.on('delete-message',() =>{
             io.emit('deleted-message')
         })
+        // increased amount socket for admin process
+        socket.on('increase-amount',(amount) =>{
+            io.emit('increased-amount',amount)
+        })
+        // decreased amount socket for admin process
+        socket.on('decrease-amount',(amount) =>{
+            io.emit('decreased-amount',amount)
+        })
     })
 }
 
-export default setupSocket
+module.exports = setupSocket

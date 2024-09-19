@@ -18,6 +18,10 @@ function Body() {
 
   const dailyBookingState = useSelector(state => state.booking)
   
+  useEffect( () => {
+    console.log(dailyBookingState.dailyQueue)
+  },[dailyBookingState.dailyQueue])
+
   //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
     dispatch(getShopStatus())
