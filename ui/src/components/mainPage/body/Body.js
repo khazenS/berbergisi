@@ -6,7 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
-import { getBooking, getShopStatus, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { changeOrderF, getBooking, getShopStatus, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import InfoBoxes from "./InfoBoxes.js";
 import LineTable from "./LineTable.js";
@@ -18,10 +18,6 @@ function Body() {
 
   const dailyBookingState = useSelector(state => state.booking)
   
-  useEffect( () => {
-    console.log(dailyBookingState.dailyQueue)
-  },[dailyBookingState.dailyQueue])
-
   //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
     dispatch(getShopStatus())
@@ -53,6 +49,8 @@ function Body() {
       // When shop closed the cancel button still exists.It is for this bug
       dispatch(resetQueueToken())
       localStorage.removeItem('queueToken')
+      // set order feature true
+      dispatch(changeOrderF(true))
     }
   },[dispatch,changedStatus])
   if (dailyBookingState.isLoading === true || changedStatus === null ) {

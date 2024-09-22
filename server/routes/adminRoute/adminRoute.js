@@ -16,6 +16,10 @@ adminRouter.post('/change-status',async(req,res)=>{
         const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
         latestDayRecord.isClosed = true
         await latestDayRecord.save()
+        // when shop was closed then open the order feature
+        shop.orderFeature = true
+        shop.save()
+
         res.json({
             status:true,
             newStatus:!req.body.statusData,
@@ -54,6 +58,16 @@ adminRouter.post('/change-status',async(req,res)=>{
 
 })
 
+// We are changing  the order feature 
+adminRouter.post('/change-order-feature', async (req,res) => {
+    const shop = await Shop.findOne({shopID:1})
+
+    shop.orderFeature = !req.body.orderFeature
+    await shop.save()
+    res.json({
+        newOrderFeature : !req.body.orderFeature
+    })
+})
 // We just check the admin access token for show other admin utilities
 adminRouter.get('/controlAdminAccessToken', async(req,res)=>{
     res.json({

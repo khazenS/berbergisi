@@ -22,10 +22,6 @@ function AdminPage() {
     useEffect(() => {
         dispatch(controlAdminAccessToken());
     }, [dispatch]);
-
-    useEffect(() => {
-        console.log('gökdeniz')
-    },[])
     
     useEffect(() => {
         if (tokenError === true) {

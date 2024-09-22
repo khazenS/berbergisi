@@ -7,6 +7,7 @@ const shopSchema= new mongoose.Schema({
         default:1
     },
     shopStatus:Boolean,
+    orderFeature:Boolean,
     cutPrice:Number,
     cutBPrice:Number,
     showMessage:String

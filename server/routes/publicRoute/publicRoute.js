@@ -16,7 +16,8 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
     res.json({
         status:true,
-        shopStatus: shop.shopStatus
+        shopStatus: shop.shopStatus,
+        orderFeature : shop.orderFeature
     })
 })
 

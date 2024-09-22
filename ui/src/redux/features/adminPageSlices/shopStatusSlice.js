@@ -13,6 +13,7 @@ let initialState = {
         error:false,
     },
     expiredError:false,
+    orderFeature : null,
     value:0
 }
 
@@ -28,6 +29,11 @@ export const defineStatus = createAsyncThunk('defineStatus', async ()=>{
     return response.data
 })
 
+export const changeOrderFeature = createAsyncThunk('changeOrderFeature', async (orderFeature) => {
+    const token = localStorage.getItem('adminAccessToken')
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/change-order-feature',{orderFeature},{headers:{'Authorization': `Bearer ${token}`}})
+    return response.data
+})
 
 export const shopStatusSlice = createSlice({
     name:'shopStatusSlice',
@@ -45,6 +51,7 @@ export const shopStatusSlice = createSlice({
         })
         builder.addCase(defineStatus.fulfilled, (state,action)=>{
             state.status = action.payload.shopStatus
+            state.orderFeature = action.payload.orderFeature
             state.defineRequest.isLoading =false
         })
         builder.addCase(defineStatus.rejected,(state)=>{
@@ -62,6 +69,7 @@ export const shopStatusSlice = createSlice({
                 state.expiredError = true
             }else{
                state.status = action.payload.newStatus
+               action.payload.newStatus === false ? state.orderFeature = true : <></>
                socket.emit('changeStatus', {status: state.status});
             }
             state.changeRequest.isLoading =false
@@ -70,6 +78,16 @@ export const shopStatusSlice = createSlice({
         builder.addCase(changeStatus.rejected,(state)=>{
             state.changeRequest.error = true
             state.changeRequest.isLoading = false
+        })
+
+        //  changeOrderFeature processes 
+        builder.addCase(changeOrderFeature.fulfilled, (state,action) => {
+            if(action.payload.status === false && action.payload.errorType === 'admin access token'){
+                state.expiredError = true
+            }else{
+               state.orderFeature = action.payload.newOrderFeature
+               socket.emit('changeOrderFeature', {orderFeature: state.orderFeature});
+            }
         })
     }
 })

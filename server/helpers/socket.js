@@ -11,6 +11,11 @@ const setupSocket = (io) => {
             //Send to all client
             io.emit('changedStatus',datas)
         })
+        //Listen 'orderFeature' socket
+        socket.on('changeOrderFeature',(data) => {
+            //Send to all client
+            io.emit('changedOrderFeature',data)
+        })
 
         //Listen registered user socket
         socket.on('newRegister',(user) => {

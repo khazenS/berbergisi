@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios'
 import { decryptData } from "../../../helpers/cryptoProcess";
+import { act } from "react";
 let initialState  = {
     shopStatus: null,
+    orderFeature : null,
     isLoading : false,
     dailyQueue : null,
     dayBookingID : null,
@@ -54,6 +56,9 @@ export const dailyBookingSlice = createSlice({
 
             state.dailyQueue[currentIndex + 1] = state.dailyQueue[currentIndex]
             state.dailyQueue[currentIndex] = temp
+        },
+        changeOrderF : (state,action) => {
+            state.orderFeature = action.payload
         }
     },
     extraReducers: (builder) => {
@@ -64,6 +69,7 @@ export const dailyBookingSlice = createSlice({
         })
         builder.addCase(getShopStatus.fulfilled,(state,action) => {
             state.shopStatus = action.payload.shopStatus
+            state.orderFeature = action.payload.orderFeature
             state.isLoading = false
         })
         builder.addCase(getShopStatus.rejected,(state) => {
@@ -87,5 +93,5 @@ export const dailyBookingSlice = createSlice({
     }
 })
 
-export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove} = dailyBookingSlice.actions
+export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove,changeOrderF} = dailyBookingSlice.actions
 export default dailyBookingSlice.reducer

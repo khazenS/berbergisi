@@ -1,4 +1,4 @@
-import { Box, Collapse, Container, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material"
+import { Box, Button, Collapse, Container, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material"
 import React, { useEffect, useState } from "react"
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -7,6 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import {useDispatch,useSelector} from 'react-redux'
 import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQueue, removeUserFromAdminQue, cutFinished, upMove, downMove, upMoveReq, downMoveReq } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
+import { changeOrderFeature } from  '../../redux/features/adminPageSlices/shopStatusSlice'
 import { socket } from "../../helpers/socketio";
 import { useNavigate } from "react-router-dom";
 
@@ -112,7 +113,8 @@ export default function AdminQueTable(){
     const shopStatus = useSelector( state => state.shopStatus.status)
     const dailyQueue = useSelector( state => state.adminBooking.dailyQueue)
     const cancelTokenError = useSelector( state => state.adminBooking.expiredError)
-    
+    const orderFeature = useSelector(state => state.shopStatus.orderFeature)
+
     const navigate = useNavigate()
 
     // token error exists
@@ -195,7 +197,9 @@ export default function AdminQueTable(){
     },[dispatch])
 
 
-
+    useEffect( () => {
+        console.log(orderFeature)
+    },[orderFeature])
 
     if(shopStatus === true && dailyQueue !== null){
         return (
@@ -246,6 +250,15 @@ export default function AdminQueTable(){
                             
                         </TableContainer>
                     </Paper>
+
+                }
+
+
+                {
+                    // We can open or close our order specify.
+                    dailyQueue.length !== 0 ? orderFeature === true ?  <Button onClick={() => {dispatch(changeOrderFeature(orderFeature))}}variant="contained" fullWidth color="error" sx={{marginTop:4,marginBottom:4,fontWeight:'bold'}}>Sira almayi kapat</Button> 
+                    : <Button onClick={() => {dispatch(changeOrderFeature(orderFeature))}}variant="contained" fullWidth color="success" sx={{marginTop:4,marginBottom:4,fontWeight:'bold'}}>Sira almayi Ac</Button>
+                    : <></>
                 }
 
             </Container>

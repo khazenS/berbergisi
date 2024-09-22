@@ -2,13 +2,13 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Modal from "@mui/material/Modal";
-import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField , Alert } from "@mui/material";
+import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField , Alert, Stack } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
 import { cancelQue, checkQueueToken, controlForFetch,registerUser,resetQueueToken,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import { socket } from "../../../helpers/socketio.js";
-import { removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { changeOrderF, removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { jwtDecode } from "jwt-decode";
 const style = {
   position: "absolute",
@@ -31,6 +31,8 @@ export default function LineModal() {
   const [submitClicked,setSubmitClicked] = React.useState(false)
   const [samePhoneError,setSamePhoneError] = React.useState(false)
 
+  // orderFeature  for button visibility
+  const orderFeature = useSelector(state => state.booking.orderFeature)
   //registerSlice state
   const state = useSelector(state => state.register.values)
   // queueToken state
@@ -119,7 +121,16 @@ export default function LineModal() {
     }
   },[dispatch])
 
+  React.useEffect( () => {
+    socket.on('changedOrderFeature', (newOrderFeature) => {
+      dispatch(changeOrderF(newOrderFeature.orderFeature))
+    })
 
+    return () => {
+      socket.off('changedOrderFeature')
+
+    }
+  },[dispatch]) 
   const handleCancel = () => {
     dispatch(cancelQue(queueToken.token))
   }
@@ -142,6 +153,7 @@ export default function LineModal() {
           Sıramı iptal et
         </Button>
         :
+        orderFeature === true ?
         <Button
           variant="contained"
           onClick={handleOpen}
@@ -155,6 +167,11 @@ export default function LineModal() {
         >
           Hemen Sıra Al
         </Button>
+        : <Stack>
+            <Alert variant="outlined" severity="info" color="info" sx={{marginTop:5,color:"black",alignItems:"center",fontWeight:"bold"}}>
+            Şuan da dükkan sahibi sıra almayı kapatmıştır lütfen yarın tekrar uğrayınız.
+            </Alert> 
+          </Stack>
       }
 
 
