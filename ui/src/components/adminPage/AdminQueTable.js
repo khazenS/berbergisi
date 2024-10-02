@@ -196,11 +196,6 @@ export default function AdminQueTable(){
         }
     },[dispatch])
 
-
-    useEffect( () => {
-        console.log(orderFeature)
-    },[orderFeature])
-
     if(shopStatus === true && dailyQueue !== null){
         return (
             <Container sx={{marginTop:'15vh'}}>

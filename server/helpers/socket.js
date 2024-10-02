@@ -68,6 +68,14 @@ const setupSocket = (io) => {
         socket.on('decrease-amount',(amount) =>{
             io.emit('decreased-amount',amount)
         })
+        // auto status changed
+        socket.on('oto-status-change',(status) =>{
+            io.emit('oto-status-change',status)
+        })
+        // set oto opening time 
+        socket.on('set-oto-opening-time',(datas) =>{
+            io.emit('set-oto-opening-time',datas)
+        })
     })
 }
 

@@ -14,11 +14,63 @@ const publicRouter = express.Router()
 //Learn the shop open or close
 publicRouter.get('/getShopStatus',async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
-    res.json({
-        status:true,
-        shopStatus: shop.shopStatus,
-        orderFeature : shop.orderFeature
-    })
+
+    const now = new Date()
+    // It is giving difference between UTC time and local time in type of minute so now its logging -180 
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+
+    if(shop.costumOpeningDate && localDate >= shop.costumOpeningDate){
+        shop.shopStatus = true
+        shop.costumOpeningDate = null
+        shop.costumFormattedOpeningDate = null
+        await shop.save()
+        const newDayBooking = await new DayBooking({
+            existDayDate :  localDate
+        }).save()
+
+        const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
+        const currentMonthRecord = await MonthBooking.findOne({existMonthDate:monthDate})
+        // Checking current month exist or not then to save new day booking into it
+        if(currentMonthRecord){
+            currentMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await currentMonthRecord.save()
+        }        
+        else{
+            const newMonthRecord = await new MonthBooking({
+                existMonthDate: monthDate
+            })
+            newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
+            await newMonthRecord.save()
+        }
+
+        res.json({
+            status:true,
+            shopStatus: shop.shopStatus,
+            orderFeature : shop.orderFeature,
+            costumOpeningDate:shop.costumOpeningDate
+        })
+    }else{
+        res.json({
+            status:false,
+            shopStatus: shop.shopStatus,
+            orderFeature : shop.orderFeature,
+            costumOpeningDate:shop.costumOpeningDate
+        })
+    }
+})
+// Controlling the oto opening time
+publicRouter.post('/control-oto-opening',async (req,res) => {
+    const shop = await Shop.findOne()
+    const now = new Date()
+    // It is giving difference between UTC time and local time in type of minute so now its logging -180 
+    const offset = now.getTimezoneOffset()
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
+
+
+
+
+
 })
 
 // User register 
@@ -228,4 +280,7 @@ publicRouter.get('/get-message', async (req,res) => {
         message:message
     })
 })
+
+// control for oto opening
+
 module.exports = publicRouter

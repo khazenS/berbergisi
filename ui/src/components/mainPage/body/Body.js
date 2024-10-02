@@ -6,7 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
-import { changeOrderF, getBooking, getShopStatus, resetDailyQueue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { changeOrderF,  getBooking, getShopStatus, resetDailyQueue, updateOtoDate } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import InfoBoxes from "./InfoBoxes.js";
 import LineTable from "./LineTable.js";
@@ -37,6 +37,21 @@ function Body() {
       socket.off('changedStatus')
     }
   },[])
+  // we listen socket  that is set oto time 
+  useEffect(()=>{
+    socket.on('set-oto-opening-time',(datas) => {
+      if(datas.set === true){
+        dispatch(updateOtoDate(datas.date))
+      }
+      else{
+        dispatch(updateOtoDate(null))
+      }
+    })
+
+    return () => {
+      socket.off('oto-status-changed')
+    }
+  },[])
 
   // This is for creating que on server
   useEffect(() => {
@@ -53,6 +68,20 @@ function Body() {
       dispatch(changeOrderF(true))
     }
   },[dispatch,changedStatus])
+
+  // oto opening socket
+  useEffect(()=>{
+    socket.on('oto-status-change',(datas) => {
+      setStatus(datas.status)
+    })
+
+    return () => {
+      socket.off('oto-status-change')
+    }
+  },[])
+
+
+
   if (dailyBookingState.isLoading === true || changedStatus === null ) {
     return (
       <Box

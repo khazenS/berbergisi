@@ -5,14 +5,18 @@ import { socket } from "../../../helpers/socketio"
 const initialState = {
     isLoading : false,
     error : false,
-    raisePrice : 0,
-    discountPrice : 0,
+    servicePrice:0,
     showMessage: '',
     expiredError : false,
     shopData : {
         cutPrice : null,
         cutBPrice : null,
         showMessage : null
+    },
+    costumShopOpening : {
+        isLoading:false,
+        date: null,
+        error:false
     }
 }
 
@@ -22,20 +26,11 @@ export const getShop = createAsyncThunk('getShop', async () => {
     return response.data
 })
 
-export const raiseService = createAsyncThunk('raiseService', async (datas) => {
+export const updateServicePriceValue = createAsyncThunk('updateServicePriceValue', async (datas) => {
     const localToken = localStorage.getItem('adminAccessToken')
-    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/raise-price',{
+    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/update-service-price',{
         service : datas.service,
-        raisePrice : datas.raisePrice
-    },{headers:{'Authorization': `Bearer ${localToken}`}})
-    return response.data
-})
-
-export const discountService = createAsyncThunk('discountService', async (datas) => {
-    const localToken = localStorage.getItem('adminAccessToken')
-    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/discount-price',{
-        service : datas.service,
-        discountPrice : datas.discountPrice
+        value : datas.value
     },{headers:{'Authorization': `Bearer ${localToken}`}})
     return response.data
 })
@@ -54,21 +49,35 @@ export const addMessage = createAsyncThunk('addMessage', async (message) => {
 
     return response.data
 })
+
+
+export const setTimeCostumOpen = createAsyncThunk('setTimeCostumOpen', async (date) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/set-time',{
+        date
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
+
+export const cancelCostumOpen = createAsyncThunk('cancelCostumOpen', async () => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.delete(process.env.REACT_APP_SERVER_URL+'admin/cancel-costum-open',{headers:{'Authorization': `Bearer ${localToken}`}})
+    return response.data
+})
+
+
+
+
 export const shopSettingsSlice = createSlice({
     name:'shopSettingsSlice',
     initialState,
     reducers: {
-        updateRaisePriceValue : (state,action) => {
-            state.raisePrice = action.payload
+        updateServicePrice : (state,action) => {
+            state.servicePrice = action.payload
         },
-        resetRaisePrice : (state) => {
-            state.raisePrice = 0
-        },
-        updateDiscountPriceValue : (state,action) => {
-            state.discountPrice = action.payload
-        },
-        resetDiscountPrice : (state) => {
-            state.discountPrice = 0
+        resetServicePrice : (state) => {
+            state.servicePrice = 0
         },
         resetShopSettingsExpiredError : (state) => {
             state.expiredError = false
@@ -84,15 +93,18 @@ export const shopSettingsSlice = createSlice({
         },
         updateShopDataMessage : (state,action) => {
             state.shopData.showMessage = action.payload
+        },
+        resetOtoDate : (state) => {
+            state.costumShopOpening.date = null
         }
     },
     extraReducers : (builder) => {
-        // raise price process
-        builder.addCase(raiseService.pending, (state) => {
+        // update service price process
+        builder.addCase(updateServicePriceValue.pending, (state) => {
             state.isLoading = true
             state.error = false
         })
-        builder.addCase(raiseService.fulfilled,(state,action) => {
+        builder.addCase(updateServicePriceValue.fulfilled,(state,action) => {
             if(action.payload.status === true){
                 socket.emit('get-shopSettings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
             }else{
@@ -100,26 +112,9 @@ export const shopSettingsSlice = createSlice({
             }
             state.isLoading = false
         })
-        builder.addCase(raiseService.rejected,(state) => {
+        builder.addCase(updateServicePriceValue.rejected,(state) => {
             state.error = true
-            console.error('Error on raisePrice')
-        })
-        // discount price process
-        builder.addCase(discountService.pending, (state) => {
-            state.isLoading = true
-            state.error = false
-        })
-        builder.addCase(discountService.fulfilled,(state,action) => {
-            if(action.payload.status === true){
-                socket.emit('get-shopSettings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
-            }else{
-                state.expiredError = true
-            }
-            state.isLoading = false
-        })
-        builder.addCase(discountService.rejected,(state) => {
-            state.error = true
-            console.error('Error on discountPrice')
+            console.error('Error on updateServicePriceValue')
         })
         // get shop actions
         builder.addCase(getShop.pending,(state) => {
@@ -131,6 +126,7 @@ export const shopSettingsSlice = createSlice({
                 state.shopData.cutPrice = action.payload.cutPrice
                 state.shopData.cutBPrice = action.payload.cutBPrice
                 state.shopData.showMessage = action.payload.showMessage
+                state.costumShopOpening.date = action.payload.costumFormattedOpeningDate
             }
             state.isLoading = false
         })
@@ -172,8 +168,44 @@ export const shopSettingsSlice = createSlice({
             state.error = true
             console.error('Error on addMessage')
         })
+
+        builder.addCase(setTimeCostumOpen.pending,(state) => {
+            state.costumShopOpening.isLoading=true
+            state.costumShopOpening.error = false
+        })
+        builder.addCase(setTimeCostumOpen.fulfilled,(state,action) => {
+            if(action.payload.status === true){
+                state.costumShopOpening.date = action.payload.formattedDate
+                socket.emit('set-oto-opening-time' , {set:true,date:action.payload.date})
+            }else{
+                state.expiredError = true
+            }
+            state.costumShopOpening.isLoading = false
+        })
+        builder.addCase(setTimeCostumOpen.rejected,(state) => {
+            state.costumShopOpening.error = true
+            console.log('Error on setTimeCostumOpen()')
+        })
+
+        builder.addCase(cancelCostumOpen.pending,(state) => {
+            state.costumShopOpening.isLoading = true
+            state.costumShopOpening.error = false
+        })
+        builder.addCase(cancelCostumOpen.fulfilled,(state,action) => {
+            if(action.payload.status === true){
+                state.costumShopOpening.date = null
+                socket.emit('set-oto-opening-time' , {set:false,date:null})
+            }else{
+                state.expiredError = true
+            }
+            state.costumShopOpening.isLoading = false
+        })
+        builder.addCase(cancelCostumOpen.rejected,(state) => {
+            state.costumShopOpening.error = true
+            console.log('Error on cancelCostumOpen()')
+        })
     }
 })
 
-export const {updateRaisePriceValue,resetRaisePrice,resetDiscountPrice,updateDiscountPriceValue,resetShopSettingsExpiredError,setCutPrice,setCutBPrice,updateShowMessage,updateShopDataMessage} = shopSettingsSlice.actions
+export const {updateServicePrice,resetServicePrice,resetShopSettingsExpiredError,resetOtoDate,setCutPrice,setCutBPrice,updateShowMessage,updateShopDataMessage} = shopSettingsSlice.actions
 export default shopSettingsSlice.reducer

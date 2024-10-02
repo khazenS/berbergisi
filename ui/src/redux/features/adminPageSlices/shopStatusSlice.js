@@ -41,6 +41,9 @@ export const shopStatusSlice = createSlice({
     reducers:{
         resetShopStatusExpiredError : (state) => {
             state.expiredError = false
+        },
+        updateStatus : (state,action) => {
+            state.status = action.payload
         }
     },
     extraReducers: (builder) =>{
@@ -92,5 +95,5 @@ export const shopStatusSlice = createSlice({
     }
 })
 
-export const {resetShopStatusExpiredError} = shopStatusSlice.actions
+export const {resetShopStatusExpiredError,updateStatus} = shopStatusSlice.actions
 export default shopStatusSlice.reducer

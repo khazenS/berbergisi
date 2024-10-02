@@ -26,6 +26,9 @@ adminRouter.post('/change-status',async(req,res)=>{
             message:"shopStatus was updated",
         })
     }else{
+        shop.costumOpeningDate = null
+        shop.costumFormattedOpeningDate = null
+        await shop.save()
         const now = new Date()
         // It is giving difference between UTC time and local time in type of minute so now its logging -180 
         const offset = now.getTimezoneOffset()
@@ -316,30 +319,13 @@ adminRouter.post('/decrease-amount', async (req,res) => {
     })
 })
 
-// raise our service which is selectted on ui
-adminRouter.put('/raise-price',async (req,res) => {
+// update our service which is selectted on ui
+adminRouter.put('/update-service-price',async (req,res) => {
     const shop = await Shop.findOne()
     if(req.body.service === 'cut'){
-        shop.cutPrice += Number(req.body.raisePrice)
+        shop.cutPrice = Number(req.body.value)
     }else{
-        shop.cutBPrice += Number(req.body.raisePrice)
-    }
-
-    await shop.save()
-    res.json({
-        status:true,
-        cutPrice:shop.cutPrice,
-        cutBPrice:shop.cutBPrice
-    })
-})
-
-// discount our service which is selectted on ui
-adminRouter.put('/discount-price',async (req,res) => {
-    const shop = await Shop.findOne()
-    if(req.body.service === 'cut'){
-        shop.cutPrice -= Number(req.body.discountPrice)
-    }else{
-        shop.cutBPrice -= Number(req.body.discountPrice)
+        shop.cutBPrice = Number(req.body.value)
     }
 
     await shop.save()
@@ -353,12 +339,12 @@ adminRouter.put('/discount-price',async (req,res) => {
 // get shop settings for shoow on admin ui
 adminRouter.get('/get-shop-settings', async (req,res) => {
     const shop = await Shop.findOne()
-
     res.json({
         status:true,
         cutPrice:shop.cutPrice,
         cutBPrice:shop.cutBPrice,
-        showMessage:shop.showMessage
+        showMessage:shop.showMessage,
+        costumFormattedOpeningDate:shop.costumFormattedOpeningDate
     })
 })
 
@@ -464,6 +450,46 @@ adminRouter.get('/get-stats', async (req,res) => {
         )})        
     }
 
+// Setting time fir costum opening  shop
+adminRouter.post('/set-time', async (req,res) => {
+    const shop = await Shop.findOne()
+    const setDate  = new Date(req.body.date)
+    shop.costumOpeningDate = setDate
+    // Date format processes 
+    const localDate = new Date(setDate.getTime() + (setDate.getTimezoneOffset() * 60000));
+    const day = localDate.getDate().toString().padStart(2,'0')
+    const month = (localDate.getMonth() + 1).toString().padStart(2,'0')
+    const year = localDate.getFullYear()
+
+    const hours = localDate.getHours().toString().padStart(2,'0')
+    const minutes = localDate.getMinutes().toString().padStart(2,'0')
+
+    const dayName = localDate.toLocaleDateString('tr-TR', { weekday: 'long' })
+
+    const formattedDate = `${day}.${month}.${year} ${hours}:${minutes} ${dayName}`
+
+    shop.costumFormattedOpeningDate = formattedDate
+    await shop.save()
+    res.json({
+        status:true,
+        formattedDate,
+        date:shop.costumOpeningDate
+    })
+
+    })
+adminRouter.delete('/cancel-costum-open', async (req,res) => {
+    const shop = await Shop.findOne()
+
+    shop.costumOpeningDate = null
+    shop.costumFormattedOpeningDate = null
+
+    await shop.save()
+
+    res.json({
+        status:true
+    })
+})
 
 })
+
 module.exports = adminRouter;

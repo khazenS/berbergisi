@@ -9,6 +9,9 @@ import AdminQueTable from "../components/adminPage/AdminQueTable.js";
 import FastOperations from "../components/adminPage/FastOperations.js";
 import ShopSettings from "../components/adminPage/ShopSettings.js";
 import ShopStats from "../components/adminPage/ShopStats.js";
+import { updateStatus } from "../redux/features/adminPageSlices/shopStatusSlice.js";
+import { socket } from "../helpers/socketio.js";
+import { resetOtoDate } from "../redux/features/adminPageSlices/shopSettingsSlice.js";
 
 
 function AdminPage() {
@@ -16,7 +19,6 @@ function AdminPage() {
     const tokenError = useSelector(state => state.adminLogin.expiredError);
     const isLoading = useSelector(state => state.adminLogin.isLoading);
     const navigate = useNavigate();
-
      
     // Token control process
     useEffect(() => {
@@ -28,6 +30,17 @@ function AdminPage() {
             navigate('/adminLogin');
         }
     }, [tokenError, navigate]);
+
+    // socket for oto opening
+    useEffect(()=>{
+        socket.on('oto-status-change',(datas) => {
+          dispatch(updateStatus(datas.status))
+        })
+    
+        return () => {
+          socket.off('oto-status-change')
+        }
+      },[])
 
     if (isLoading) {
         return (

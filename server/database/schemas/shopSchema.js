@@ -10,7 +10,15 @@ const shopSchema= new mongoose.Schema({
     orderFeature:Boolean,
     cutPrice:Number,
     cutBPrice:Number,
-    showMessage:String
+    showMessage:String,
+    costumOpeningDate: {
+        type:Date,
+        default: null
+    },
+    costumFormattedOpeningDate: {
+        type:String,
+        default:null
+    }
 })
 
 const Shop = mongoose.model('Shop',shopSchema,'Shop')
