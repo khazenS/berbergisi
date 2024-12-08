@@ -10,9 +10,8 @@ function Header(){
         <Grid item xs={9}  sx={{display:'flex',justifyContent:'center',alignItems:'center'}}>
             <Button href='tel:+900000000000' variant='contained' size='medium' color='success'>
             <LocalPhoneOutlinedIcon fontSize="medium"></LocalPhoneOutlinedIcon>
-            <Typography sx={{marginLeft:1,fontWeight:'bold'}}>Ara +900000000000</Typography>
+            <Typography sx={{marginLeft:1,fontWeight:'bold'}}>Ara +90 000 000 0000</Typography>
             </Button>
-
         </Grid>
         </Grid>
     )

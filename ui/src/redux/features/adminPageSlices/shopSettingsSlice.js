@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
-import { socket } from "../../../helpers/socketio"
 
 const initialState = {
     isLoading : false,
@@ -9,15 +8,14 @@ const initialState = {
     showMessage: '',
     expiredError : false,
     shopData : {
-        cutPrice : null,
-        cutBPrice : null,
         showMessage : null
     },
     costumShopOpening : {
         isLoading:false,
         date: null,
         error:false
-    }
+    },
+    services : []
 }
 
 export const getShop = createAsyncThunk('getShop', async () => {
@@ -26,14 +24,6 @@ export const getShop = createAsyncThunk('getShop', async () => {
     return response.data
 })
 
-export const updateServicePriceValue = createAsyncThunk('updateServicePriceValue', async (datas) => {
-    const localToken = localStorage.getItem('adminAccessToken')
-    const response = await axios.put(process.env.REACT_APP_SERVER_URL+'admin/update-service-price',{
-        service : datas.service,
-        value : datas.value
-    },{headers:{'Authorization': `Bearer ${localToken}`}})
-    return response.data
-})
 
 export const deleteMessage = createAsyncThunk('deleteMessage', async () => {
     const localToken = localStorage.getItem('adminAccessToken')
@@ -45,6 +35,26 @@ export const addMessage = createAsyncThunk('addMessage', async (message) => {
     const localToken = localStorage.getItem('adminAccessToken')
     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/add-message',{
         message
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
+
+export const addService = createAsyncThunk('addService', async (service) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/add-service',{
+        name:service.name,
+        estimatedTime:service.estimatedTime,
+        amount:service.amount
+    },{headers:{'Authorization': `Bearer ${localToken}`}})
+
+    return response.data
+})
+
+export const deleteService = createAsyncThunk('deleteService', async (id) => {
+    const localToken = localStorage.getItem('adminAccessToken')
+    const response = await axios.post(process.env.REACT_APP_SERVER_URL+'admin/delete-service',{
+        serviceID:id
     },{headers:{'Authorization': `Bearer ${localToken}`}})
 
     return response.data
@@ -73,49 +83,17 @@ export const shopSettingsSlice = createSlice({
     name:'shopSettingsSlice',
     initialState,
     reducers: {
-        updateServicePrice : (state,action) => {
-            state.servicePrice = action.payload
-        },
-        resetServicePrice : (state) => {
-            state.servicePrice = 0
-        },
         resetShopSettingsExpiredError : (state) => {
             state.expiredError = false
         },
-        setCutPrice : (state,action) => {
-            state.shopData.cutPrice = action.payload
-        },
-        setCutBPrice : (state,action) => {
-            state.shopData.cutBPrice = action.payload
-        },
         updateShowMessage : (state,action) => {
             state.showMessage = action.payload
-        },
-        updateShopDataMessage : (state,action) => {
-            state.shopData.showMessage = action.payload
         },
         resetOtoDate : (state) => {
             state.costumShopOpening.date = null
         }
     },
     extraReducers : (builder) => {
-        // update service price process
-        builder.addCase(updateServicePriceValue.pending, (state) => {
-            state.isLoading = true
-            state.error = false
-        })
-        builder.addCase(updateServicePriceValue.fulfilled,(state,action) => {
-            if(action.payload.status === true){
-                socket.emit('get-shopSettings',{cutPrice:action.payload.cutPrice,cutBPrice:action.payload.cutBPrice})
-            }else{
-                state.expiredError = true
-            }
-            state.isLoading = false
-        })
-        builder.addCase(updateServicePriceValue.rejected,(state) => {
-            state.error = true
-            console.error('Error on updateServicePriceValue')
-        })
         // get shop actions
         builder.addCase(getShop.pending,(state) => {
             state.isLoading = true
@@ -123,10 +101,9 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(getShop.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                state.shopData.cutPrice = action.payload.cutPrice
-                state.shopData.cutBPrice = action.payload.cutBPrice
                 state.shopData.showMessage = action.payload.showMessage
                 state.costumShopOpening.date = action.payload.costumFormattedOpeningDate
+                state.services = action.payload.services
             }
             state.isLoading = false
         })
@@ -141,7 +118,7 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(deleteMessage.fulfilled,(state,action) => {
             if(action.payload.status === true){
-                socket.emit('delete-message')
+                state.shopData.showMessage = null
             }else{
                 state.expiredError = true
             }
@@ -158,7 +135,7 @@ export const shopSettingsSlice = createSlice({
         })
         builder.addCase(addMessage.fulfilled, (state,action) => {
             if(action.payload.status === true){
-                socket.emit('get-message', action.payload.message)
+                state.shopData.showMessage = action.payload.message
             }else{
                 state.expiredError = true
             }
@@ -176,7 +153,6 @@ export const shopSettingsSlice = createSlice({
         builder.addCase(setTimeCostumOpen.fulfilled,(state,action) => {
             if(action.payload.status === true){
                 state.costumShopOpening.date = action.payload.formattedDate
-                socket.emit('set-oto-opening-time' , {set:true,date:action.payload.date})
             }else{
                 state.expiredError = true
             }
@@ -194,7 +170,6 @@ export const shopSettingsSlice = createSlice({
         builder.addCase(cancelCostumOpen.fulfilled,(state,action) => {
             if(action.payload.status === true){
                 state.costumShopOpening.date = null
-                socket.emit('set-oto-opening-time' , {set:false,date:null})
             }else{
                 state.expiredError = true
             }
@@ -204,8 +179,42 @@ export const shopSettingsSlice = createSlice({
             state.costumShopOpening.error = true
             console.log('Error on cancelCostumOpen()')
         })
+        // Add service processes
+        builder.addCase(addService.pending, (state) => {
+            state.isLoading= true
+            state.error = false
+        })
+        builder.addCase(addService.fulfilled,(state,action) => {
+            if(action.payload.status === true){
+                state.services.push(action.payload.newService)
+            }else{
+                state.expiredError = true
+            }
+            state.isLoading = false
+        })
+        builder.addCase(addService.rejected,(state) => {
+            state.error = true
+            console.log("Error on addServices()!!")
+        })
+        // Delete service processes
+        builder.addCase(deleteService.pending, (state) => {
+            state.isLoading= true
+            state.error = false
+        })
+        builder.addCase(deleteService.fulfilled,(state,action) => {
+            if(action.payload.status === true){
+                state.services = action.payload.newServices
+            }else{
+                state.expiredError = true
+            }
+            state.isLoading = false
+        })
+        builder.addCase(deleteService.rejected,(state) => {
+            state.error = true
+            console.log("Error on deleteService()!!")
+        })
     }
 })
 
-export const {updateServicePrice,resetServicePrice,resetShopSettingsExpiredError,resetOtoDate,setCutPrice,setCutBPrice,updateShowMessage,updateShopDataMessage} = shopSettingsSlice.actions
+export const {updateServicePrice,resetServicePrice,resetShopSettingsExpiredError,resetOtoDate,updateShowMessage} = shopSettingsSlice.actions
 export default shopSettingsSlice.reducer

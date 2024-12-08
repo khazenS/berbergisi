@@ -12,30 +12,21 @@ function InfoBoxes(){
     const [estimatedMunite,setEstimatedMunite] = useState(null)
 
     const dailyQue = useSelector( state => state.booking.dailyQueue )
-
-    // queueToken
-    const queueToken = localStorage.getItem('queueToken')
-    let decodedToken = null
-
-    if(queueToken !== null){
-      decodedToken = jwtDecode(queueToken)
-    }
-
+    const queueToken = useSelector( state => state.register.queueToken.token)
+    const services = useSelector(state => state.booking.services)
     // print out the count of costumer of the line
     useEffect(() => {
-        if(decodedToken !== null && dailyQue){
+        if(queueToken && dailyQue){
             let totalCostumer = 0
             let totalMunite = 0
             // This is for just calculating front order datas of specified customer
-            const index = dailyQue.findIndex(person => person.userBookingID === decodedToken.userBookingID)
+            const index = dailyQue.findIndex(person => person.userBookingID === jwtDecode(queueToken).userBookingID)
             const newDailyQue = dailyQue.slice(0,index)
-            console.log(newDailyQue)
-
 
             for(const queCostumer of newDailyQue){
                 totalCostumer += queCostumer.comingWith
-                queCostumer.cutType === 'cut' ? totalMunite += 30 : totalMunite += 45
-                totalMunite += (queCostumer.comingWith - 1) * 30
+                totalMunite += queCostumer.service.estimatedTime
+                totalMunite += (queCostumer.comingWith - 1) * services[0].estimatedTime
             }
             setEstimatedHour((totalMunite / 60) | 0)
             setEstimatedMunite(totalMunite % 60)
@@ -46,14 +37,14 @@ function InfoBoxes(){
             let totalMunite = 0
             for(const queCostumer of dailyQue){
                 totalCostumer += queCostumer.comingWith
-                queCostumer.cutType === 'cut' ? totalMunite += 30 : totalMunite += 45
-                totalMunite += (queCostumer.comingWith - 1) * 30
+                totalMunite += queCostumer.service.estimatedTime
+                totalMunite += (queCostumer.comingWith - 1) * services[0].estimatedTime
             }
             setEstimatedHour((totalMunite / 60) | 0)
             setEstimatedMunite(totalMunite % 60)
             setCostumer(totalCostumer)
         }
-      },[dailyQue])
+    },[dailyQue,queueToken])
 
     return (
         <div>

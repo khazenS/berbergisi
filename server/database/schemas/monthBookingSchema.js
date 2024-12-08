@@ -10,13 +10,12 @@ const monthBookingSchema = new mongoose.Schema({
             default:[]
         }
     ],
-    cutCount : {
-        type:Number,
-        default : 0
-    },
-    cutBCount : {
-        type : Number,
-        default : 0
+    monthlyCount : {
+        type:[{
+            serviceID:Number,
+            count:Number
+        }],
+        default:[]
     },
     monthlyPaid : {
         type:Number,

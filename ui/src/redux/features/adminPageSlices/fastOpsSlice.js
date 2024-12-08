@@ -1,7 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
-import { decryptData } from "../../../helpers/cryptoProcess"
-import { socket } from "../../../helpers/socketio"
 
 const initialState = {
     isLoading : false,
@@ -59,7 +57,7 @@ export const fastOpsSlice = createSlice({
         })
         builder.addCase(registerFastUser.fulfilled, (state,action) => {
             if(action.payload.status === true){ 
-                socket.emit('fastUser-register',{fastUserDatas: decryptData(action.payload.fastUserDatas)})
+                state.fastName = ''
             }else{ 
                 state.expiredError = true 
             }
@@ -75,9 +73,7 @@ export const fastOpsSlice = createSlice({
             state.error = false
         })
         builder.addCase(increaseAmount.fulfilled,(state,action) => {
-            if(action.payload.status === true){
-                socket.emit('increase-amount',action.payload.increasedAmount)
-            }else{
+            if(action.payload.status === false){
                 state.expiredError = true
             }
             state.isLoading = true
@@ -92,9 +88,7 @@ export const fastOpsSlice = createSlice({
             state.error = false
         })
         builder.addCase(decreaseAmount.fulfilled,(state,action) => {
-            if(action.payload.status === true){
-                socket.emit('decrease-amount',action.payload.decreasedAmount)
-            }else{
+            if(action.payload.status === false){
                 state.expiredError = true
             }
             state.isLoading = true

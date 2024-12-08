@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
 import { decryptData } from "../../../helpers/cryptoProcess"
-import { socket } from "../../../helpers/socketio"
+
 
 let initialState = {
     dailyQueue : null,
@@ -59,12 +59,11 @@ export const adminDayBookingSlice = createSlice({
         addNewUser: (state,action) => {
             state.dailyQueue.push({
                 name:action.payload.name,
-                cutType:action.payload.cutType,
+                service:action.payload.service,
                 phoneNumber:action.payload.phoneNumber,
                 comingWith:action.payload.comingWith,
                 userBookingID:action.payload.userBookingID,
                 shownDate:action.payload.shownDate
-                
             })
         },
         cancelUserFromAdminQue : (state,action) => {
@@ -72,21 +71,6 @@ export const adminDayBookingSlice = createSlice({
         },
         resetCancelExpiredError: (state) => {
             state.expiredError = false
-        },
-        upMove : (state,action) => {
-            const currentIndex = action.payload
-            const temp = state.dailyQueue[currentIndex - 1]
-
-            state.dailyQueue[currentIndex - 1] = state.dailyQueue[currentIndex]
-            state.dailyQueue[currentIndex] = temp
-
-        },
-        downMove : (state,action) => {
-            const currentIndex = action.payload
-            const temp = state.dailyQueue[currentIndex + 1]
-
-            state.dailyQueue[currentIndex + 1] = state.dailyQueue[currentIndex]
-            state.dailyQueue[currentIndex] = temp
         }
     },
     extraReducers : (builder) => {
@@ -112,8 +96,8 @@ export const adminDayBookingSlice = createSlice({
         })
         builder.addCase(removeUserFromAdminQue.fulfilled,(state,action) => {
            if(action.payload.status === true){
-                socket.emit('remove-que',{userBookingID:action.payload.userBookingID,bookingToken:action.payload.bookingToken})
-           }else{
+                state.dailyQueue = state.dailyQueue.filter( user => user.userBookingID !== action.payload.userBookingID)
+            }else{
                 state.expiredError = true
            }
             state.isLoading = false
@@ -131,7 +115,7 @@ export const adminDayBookingSlice = createSlice({
         })
         builder.addCase(cutFinished.fulfilled, (state,action) => {
             if(action.payload.status === true){
-                socket.emit('finish-cut',{userBookingID:action.payload.userBookingID,bookingToken:action.payload.bookingToken,finishedDatas:action.payload.finishedDatas})
+                state.dailyQueue = state.dailyQueue.filter( user => user.userBookingID !== action.payload.userBookingID)
             }else{
                 state.expiredError = true
             }
@@ -151,7 +135,11 @@ export const adminDayBookingSlice = createSlice({
         })
         builder.addCase(upMoveReq.fulfilled, (state,action) => {
             if(action.payload.status === true){
-                socket.emit('up-move',{index:action.payload.index})
+                const currentIndex = action.payload.index
+                const temp = state.dailyQueue[currentIndex - 1]
+    
+                state.dailyQueue[currentIndex - 1] = state.dailyQueue[currentIndex]
+                state.dailyQueue[currentIndex] = temp
             }else{
                 state.expiredError = true
             }
@@ -170,7 +158,11 @@ export const adminDayBookingSlice = createSlice({
         })
         builder.addCase(downMoveReq.fulfilled, (state,action) => {
             if(action.payload.status === true){
-                socket.emit('down-move',{index:action.payload.index})
+                const currentIndex = action.payload.index
+                const temp = state.dailyQueue[currentIndex + 1]
+    
+                state.dailyQueue[currentIndex + 1] = state.dailyQueue[currentIndex]
+                state.dailyQueue[currentIndex] = temp
             }else{
                 state.expiredError = true
             }
@@ -183,5 +175,5 @@ export const adminDayBookingSlice = createSlice({
     }
 })
 
-export const {resetDailyQueue,addNewUser,cancelUserFromAdminQue,resetCancelExpiredError,upMove,downMove} = adminDayBookingSlice.actions
+export const {resetDailyQueue,addNewUser,cancelUserFromAdminQue,resetCancelExpiredError} = adminDayBookingSlice.actions
 export default adminDayBookingSlice.reducer

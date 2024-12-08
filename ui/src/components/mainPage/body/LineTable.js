@@ -4,33 +4,21 @@ import { useDispatch, useSelector } from "react-redux";
 import { downMove, newUserToQue, removeUserFromQue, upMove } from "../../../redux/features/mainPageSlices/dailyBookingSlice";
 import { socket } from "../../../helpers/socketio.js";
 import { jwtDecode } from "jwt-decode";
+import { decryptData } from "../../../helpers/cryptoProcess.js";
 
 export default function LineTable(){
     const dispatch = useDispatch()
     const dailyQue = useSelector( state => state.booking.dailyQueue )
-    const userDatas = useSelector( state => state.register.userDatas)
 
     // queueToken
-    const queueToken = localStorage.getItem('queueToken')
-    let decodedToken = null
-
-    if(queueToken !== null){
-      decodedToken = jwtDecode(queueToken)
-    }
-    
-    useEffect(() => {
-        if(userDatas){
-          // Sending userDatas to all client
-          socket.emit('newRegister',userDatas)
-        }
-    },[dispatch,userDatas])
+    const queueToken = useSelector( state => state.register.queueToken.token)
 
     // Listen socket for new user to write it on ui
     useEffect(()=>{
-      socket.on('newUser',(user) => {
-        dispatch(newUserToQue(user))
+      socket.on('newUser',(cryptedData) => {
+        const decryptedData = decryptData(cryptedData)
+        dispatch(newUserToQue(decryptedData))
       })
-  
       return () => {
         socket.off('newUser')
       }
@@ -38,12 +26,13 @@ export default function LineTable(){
 
     // Listen socket for new fast user to write it on ui
     useEffect(()=>{
-      socket.on('fastUser-registered',(user) => {
-        dispatch(newUserToQue(user))
+      socket.on('fastUser-register',(fastUserDatas) => {
+        const decryptedData = decryptData(fastUserDatas)
+        dispatch(newUserToQue(decryptedData))
       })
   
       return () => {
-        socket.off('fastUser-registered')
+        socket.off('fastUser-register')
       }
     },[dispatch])
     
@@ -60,7 +49,7 @@ export default function LineTable(){
 
     // Listen up move socket for moving the user from admin panel
     useEffect( () => {
-      socket.on('up-moved',({index}) => {
+      socket.on('up-moved',(index) => {
         dispatch(upMove(index))
       })
 
@@ -71,7 +60,7 @@ export default function LineTable(){
 
     // Listen down move socket for moving the user from admin panel
     useEffect( () => {
-      socket.on('down-moved',({index}) => {
+      socket.on('down-moved',(index) => {
         dispatch(downMove(index))
       })
 
@@ -96,7 +85,7 @@ export default function LineTable(){
                     </TableHead>
                     <TableBody>
                         {dailyQue.map((data) => (
-                          queueToken !== null && data.userBookingID === decodedToken.userBookingID ? 
+                          queueToken && data.userBookingID === jwtDecode(queueToken).userBookingID ? 
                           <TableRow key={dailyQue.indexOf(data)} sx={{ border: '2px solid red' }}>
                             <TableCell >{dailyQue.indexOf(data) + 1}</TableCell>
                             <TableCell align="center">{data.name}</TableCell>
@@ -126,7 +115,7 @@ export default function LineTable(){
             <Typography variant="h4" sx={{
                 textAlign:"center",
                 fontWeight:'bold',
-            }}> Şuanda sırada hiç kimse yok</Typography>        
+            }}> Şuan da sırada hiç kimse yok</Typography>        
             </Box>
         
           )}

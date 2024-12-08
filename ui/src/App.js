@@ -1,6 +1,6 @@
 import AdminPage from "./pages/AdminPage";
 import MainPage from "./pages/MainPage";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, HashRouter } from "react-router-dom";
 import NoPage from "./pages/NoPage";
 import AdminEntryPage from "./pages/AdminEntryPage.js";
 
@@ -11,16 +11,14 @@ import '@fontsource/kanit/700.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
-        <Route path="/">
-          <Route index element={<MainPage />} />
-          <Route path="adminLogin" element={<AdminEntryPage/>}></Route>
-          <Route path="admin" element={<AdminPage/>} />
-          <Route path="*" element={<NoPage />} />
-        </Route>
+        <Route path="/" element={<MainPage />} />
+        <Route path="/adminLogin" element={<AdminEntryPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="*" element={<NoPage />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios'
-import { decryptData } from "../../../helpers/cryptoProcess";
-import { socket } from "../../../helpers/socketio";
+import { decryptData, encryptData } from "../../../helpers/cryptoProcess";
+
 
 let initialState  = {
     shopStatus: null,
@@ -10,6 +10,7 @@ let initialState  = {
     isLoading : false,
     dailyQueue : null,
     dayBookingID : null,
+    services:[],
     error:false
 }
 
@@ -25,11 +26,6 @@ export const getShopStatus = createAsyncThunk('getShopStatus', async () => {
     return response.data
 })
 
-// // Get shop status
-// export const controlOtoOpening = createAsyncThunk('controlOtoOpening', async () => {
-//     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'public/control-oto-opening')
-//     return response.data
-// })
 
 export const dailyBookingSlice = createSlice({
     name: 'dailyBookingSlice',
@@ -38,10 +34,10 @@ export const dailyBookingSlice = createSlice({
         newUserToQue : (state,action) => {
             state.dailyQueue.push({
                 name:action.payload.name,
-                cutType:action.payload.cutType,
+                service:action.payload.service,
                 comingWith:action.payload.comingWith,
                 userBookingID:action.payload.userBookingID,
-                phoneNumber:action.payload.phoneNumber
+                phoneNumber: encryptData(action.payload.phoneNumber)
             })
         },
         resetDailyQueue : (state) => {
@@ -78,9 +74,6 @@ export const dailyBookingSlice = createSlice({
             state.error = false
         })
         builder.addCase(getShopStatus.fulfilled,(state,action) => {
-            if(action.payload.status === true){
-                socket.emit('oto-status-change', {status: true});
-            }
             state.shopStatus = action.payload.shopStatus
             state.orderFeature = action.payload.orderFeature
             state.otoOpeningDate = action.payload.costumOpeningDate
@@ -98,27 +91,14 @@ export const dailyBookingSlice = createSlice({
         builder.addCase(getBooking.fulfilled , (state,action) => {
             state.dailyQueue = decryptData(action.payload.dailyQue)
             state.dayBookingID = decryptData(action.payload.dayBookingID)
+            state.services = action.payload.services
             state.isLoading = false
         })
         builder.addCase(getBooking.rejected , (state) => {
             state.error = true
             console.log('Rejedted from getBooking request!')
         })
-        // // processes controlOtoOpening()
-        // builder.addCase(controlOtoOpening.pending,(state) => {
-        //     state.error = false
-        // })
-        // builder.addCase(controlOtoOpening.fulfilled,(state,action) => {
-        //     if(action.payload.status === true){
-        //         state.shopStatus = true
-        //         socket.emit('oto-status-change', {status:true})
-        //         state.otoOpeningDate = null
-        //     }
-        // })
-        // builder.addCase(controlOtoOpening.rejected,(state) => {
-        //     state.error = true
-        //     console.log('Error on controlOtoOpening()')
-        // })
+
     }
 })
 

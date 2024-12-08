@@ -73,7 +73,6 @@ export const shopStatusSlice = createSlice({
             }else{
                state.status = action.payload.newStatus
                action.payload.newStatus === false ? state.orderFeature = true : <></>
-               socket.emit('changeStatus', {status: state.status});
             }
             state.changeRequest.isLoading =false
             
@@ -89,7 +88,6 @@ export const shopStatusSlice = createSlice({
                 state.expiredError = true
             }else{
                state.orderFeature = action.payload.newOrderFeature
-               socket.emit('changeOrderFeature', {orderFeature: state.orderFeature});
             }
         })
     }

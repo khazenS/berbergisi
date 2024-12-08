@@ -7,6 +7,7 @@ const { encryptData } = require('../../helpers/cryptoProcess.js');
 const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
+const { registerLimiter } = require('../../middleware/rateLimitMidleware.js');
 
 const publicRouter = express.Router()
 
@@ -43,7 +44,7 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
             newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
             await newMonthRecord.save()
         }
-
+        req.io.emit('oto-status-change', {status: true});
         res.json({
             status:true,
             shopStatus: shop.shopStatus,
@@ -59,22 +60,9 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
         })
     }
 })
-// Controlling the oto opening time
-publicRouter.post('/control-oto-opening',async (req,res) => {
-    const shop = await Shop.findOne()
-    const now = new Date()
-    // It is giving difference between UTC time and local time in type of minute so now its logging -180 
-    const offset = now.getTimezoneOffset()
-    const localDate = new Date(now.getTime() - (offset * 60 * 1000))
 
-
-
-
-
-})
-
-// User register 
-publicRouter.post('/register-user', async (req,res) => {
+// User register registerLimiter ekle
+publicRouter.post('/register-user',registerLimiter ,async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
     // date 
     const now = new Date();
@@ -90,116 +78,103 @@ publicRouter.post('/register-user', async (req,res) => {
     const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
     // get current daily shop
     const lastDayBooking = await DayBooking.findOne().sort({existDayDate : -1})
+    
+    let updatedUser = null
+
+    // Conntrolling for is user exists
     if(!user){
         // new user record
-        const updatedUser = await new User({
+        updatedUser = await new User({
             name:req.body.data.name,
             phoneNumber:req.body.data.phoneNumber,
             existTime:localDate
         }).save()
-
-        //new user booking record
-        const newUserBooking = await new UserBooking({
-            userID:updatedUser.userID,
-            cutType:req.body.data.cutType,
-            comingWith:req.body.data.comingWithValue,
-            bookingToken:null,
-            registerTime:localDate
-
-        }).save()
-        const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
-        newUserBooking.bookingToken = bookingToken
-        await newUserBooking.save()
-        //push to que new user
-        lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
-        await lastDayBooking.save()
-        
-        
-
-        res.json({
-            status:true,
-            queueToken:bookingToken,
-            userDatas: encryptData(
-                {
-                    name:req.body.data.name,
-                    cutType:req.body.data.cutType,
-                    comingWith:req.body.data.comingWithValue,
-                    userBookingID:newUserBooking.userBookingID,
-                    phoneNumber:req.body.data.phoneNumber,
-                    shownDate:formattedDate
-                }
-            )
-        })
     }else{
         //update user
         user.name = req.body.data.name
-        const updatedUser = await user.save()
-
-        // new user booking
-        const newUserBooking = await new UserBooking({
-            userID:updatedUser.userID,
-            cutType:req.body.data.cutType,
-            comingWith:req.body.data.comingWithValue,
-            bookingToken:null,
-            registerTime:localDate
-
-        }).save()
-        const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
-        newUserBooking.bookingToken = bookingToken
-        await newUserBooking.save()
-        //push to que new user
-        lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
-        await lastDayBooking.save()
-
-        res.json({
-            status:true,
-            queueToken:bookingToken,
-            userDatas: encryptData(
-                {
-                    name:req.body.data.name,
-                    cutType:req.body.data.cutType,
-                    comingWith:req.body.data.comingWithValue,
-                    userBookingID:newUserBooking.userBookingID,
-                    phoneNumber:req.body.data.phoneNumber,
-                    shownDate:formattedDate
-                }
-            )
-        })
-
+        updatedUser = await user.save()
     }
+    const shop = await Shop.findOne()
+    const service = !req.body.data.serviceID ? shop.services[0] : shop.services.find(service => service.serviceID == req.body.data.serviceID)
+    //new user booking record
+    const newUserBooking = await new UserBooking({
+        userID:updatedUser.userID,
+        serviceID: !req.body.data.serviceID ? shop.services[0].serviceID : req.body.data.serviceID,
+        comingWith:req.body.data.comingWithValue,
+        bookingToken:null,
+        registerTime:localDate
+    }).save()
+    const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
+    newUserBooking.bookingToken = bookingToken
+    await newUserBooking.save()
+    //push to que new user
+    lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
+    await lastDayBooking.save()
+
+
+    const cryptedData = encryptData(
+        {
+            name:req.body.data.name,
+            service:{
+                name:service.name,
+                estimatedTime:service.estimatedTime
+            },
+            serviceEstimatedTime:service.estimatedTime,
+            comingWith:req.body.data.comingWithValue,
+            userBookingID:newUserBooking.userBookingID,
+            phoneNumber:req.body.data.phoneNumber,
+            shownDate:formattedDate
+        }
+    )
+    req.io.emit('newUser',cryptedData)
+    res.json({
+        status:true,
+        queueToken:bookingToken
+    })
 })
 
 // If exists get daily booking or create new one
 publicRouter.get('/get-dailyBooking', async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
-    
+    const shop = await Shop.findOne()
     const responseArray = []
     for(const userBookingID of latestRecord.usersBooking){
         const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
+        const service = shop.services.find(service => service.serviceID == currentUserBooking.serviceID)
         if(currentUserBooking.userID === undefined){
             const responseData = {
                 name:currentUserBooking.name,
-                cutType:currentUserBooking.cutType,
+                service:{
+                    name:service.name,
+                    estimatedTime:service.estimatedTime
+                },
                 comingWith:currentUserBooking.comingWith,
-                userBookingID:userBookingID
+                userBookingID:userBookingID,
+                phoneNumber : null
             }
             responseArray.push(responseData)
         }else{
             const currentUser = await User.findOne({userID:currentUserBooking.userID})
             const responseData = {
                 name:currentUser.name,
-                cutType:currentUserBooking.cutType,
+                service:{
+                    name:service.name,
+                    estimatedTime:service.estimatedTime
+                },
                 comingWith:currentUserBooking.comingWith,
-                userBookingID:userBookingID
+                userBookingID:userBookingID,
+                phoneNumber : encryptData(currentUser.phoneNumber)
             }
             responseArray.push(responseData)
         }
     }
 
+    
     res.json({
         status: true,
         dailyQue : encryptData(responseArray),
         dayBookingID: encryptData(latestRecord.dayBookingID),
+        services: shop.services
     })
 
     
@@ -232,6 +207,7 @@ publicRouter.post('/cancel-queue', async (req,res) => {
         if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
             dayBooking.usersBooking = dayBooking.usersBooking.filter( userBookingID => userBookingID !== userBooking.userBookingID)
             await dayBooking.save()
+            req.io.emit('cancel', userBooking.userBookingID)
             res.json({
                 status:true,
                 userBookingID:userBooking.userBookingID
@@ -281,6 +257,5 @@ publicRouter.get('/get-message', async (req,res) => {
     })
 })
 
-// control for oto opening
 
 module.exports = publicRouter

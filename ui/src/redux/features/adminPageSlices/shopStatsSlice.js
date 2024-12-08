@@ -5,21 +5,8 @@ import { decryptData } from "../../../helpers/cryptoProcess"
 const initialState = {
     isLoading : false,
     error : false,
-    shopStats: {
-        status: false,
-        daily : {
-            income : null,
-            cutCount: null,
-            cutBCount: null
-        },
-        weekly : {
-            income : null,
-            cutCount: null,
-            cutBCount: null
-        },
-        monthlyIncome: null,
-        yearlyIncome : null
-    }
+    stats : null,
+
     
 }
 
@@ -34,37 +21,41 @@ export const shopStatsSlice = createSlice({
     initialState,
     reducers:{
         resetDaily : (state) => {
-            state.shopStats.daily.income = 0
-            state.shopStats.daily.cutCount = 0
-            state.shopStats.daily.cutBCount = 0
+            state.stats.daily.dailyCounts.forEach( service => {
+                service.count = 0
+            });
+            state.stats.daily.dailyIncome = 0
         },
         newFinishedCut : (state,action) => {
-            state.shopStats.daily.income += action.payload.income
-            state.shopStats.weekly.income += action.payload.income
-            state.shopStats.monthlyIncome += action.payload.income
-            state.shopStats.yearlyIncome += action.payload.income
+            state.stats.daily.dailyIncome += action.payload.income
+            state.stats.weekly.weeklyIncome += action.payload.income
+            state.stats.monthlyIncome += action.payload.income
+            state.stats.yearlyIncome += action.payload.income
 
-            if(action.payload.cutType === 'cut'){
-                state.shopStats.daily.cutCount += 1
-                state.shopStats.weekly.cutCount += 1
-            }else{
-                state.shopStats.daily.cutBCount += 1
-                state.shopStats.weekly.cutBCount += 1
-            }
-            state.shopStats.daily.cutCount += (action.payload.comingWith - 1)
-            state.shopStats.weekly.cutCount += (action.payload.comingWith - 1)
+            state.stats.daily.dailyCounts.forEach( (service,i) => {
+                if(service.name === action.payload.serviceName) {
+                    state.stats.daily.dailyCounts[i].count += 1
+                    state.stats.daily.dailyCounts[0].count += (action.payload.comingWith - 1)
+                }
+            })
+            state.stats.weekly.weeklyCounts.forEach( (service,i) => {
+                if(service.name === action.payload.serviceName){
+                   state.stats.weekly.weeklyCounts[i].count += 1 
+                   state.stats.weekly.weeklyCounts[0].count += (action.payload.comingWith - 1)
+                } 
+            })
         },
         increaseAmountStats : (state,action) => {
-            state.shopStats.daily.income += action.payload
-            state.shopStats.weekly.income += action.payload
-            state.shopStats.monthlyIncome += action.payload
-            state.shopStats.yearlyIncome += action.payload
+            state.stats.daily.dailyIncome += action.payload
+            state.stats.weekly.weeklyIncome += action.payload
+            state.stats.monthlyIncome += action.payload
+            state.stats.yearlyIncome += action.payload
         },
         decreaseAmountStats : (state,action) => {
-            state.shopStats.daily.income -= action.payload
-            state.shopStats.weekly.income -= action.payload
-            state.shopStats.monthlyIncome -= action.payload
-            state.shopStats.yearlyIncome -= action.payload
+            state.stats.daily.dailyIncome -= action.payload
+            state.stats.weekly.weeklyIncome -= action.payload
+            state.stats.monthlyIncome -= action.payload
+            state.stats.yearlyIncome -= action.payload
         }
     },
     extraReducers: (builder) => {
@@ -74,17 +65,7 @@ export const shopStatsSlice = createSlice({
         })
         builder.addCase(getStats.fulfilled, (state,action) => {
             const decryptedData = decryptData(action.payload.stats)
-            state.shopStats.daily.income = decryptedData.daily.income
-            state.shopStats.daily.cutCount = decryptedData.daily.cutCount
-            state.shopStats.daily.cutBCount = decryptedData.daily.cutBCount
-
-            state.shopStats.weekly.income = decryptedData.weekly.income
-            state.shopStats.weekly.cutCount = decryptedData.weekly.cutCount
-            state.shopStats.weekly.cutBCount = decryptedData.weekly.cutBCount
-
-            state.shopStats.monthlyIncome = decryptedData.monthlyIncome
-            state.shopStats.yearlyIncome = decryptedData.yearlyIncome
-            state.shopStats.status = action.payload.status
+            state.stats = decryptedData
             state.isLoading = false
         })
         builder.addCase(getStats.rejected, (state) => {

@@ -5,6 +5,7 @@ const { encryptData } = require('../../helpers/cryptoProcess.js');
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { User } = require('../../database/schemas/userSchema.js');
 const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
+
 const adminRouter = express.Router()
 
 // Changin status for shop opening or closing
@@ -12,13 +13,14 @@ adminRouter.post('/change-status',async(req,res)=>{
     const shop = await Shop.findOne({shopID:1})
     shop.shopStatus = !req.body.statusData
     await shop.save()
+
     if(!req.body.statusData === false){
         const latestDayRecord = await DayBooking.findOne().sort({existDayDate : -1})
         latestDayRecord.isClosed = true
         await latestDayRecord.save()
         // when shop was closed then open the order feature
         shop.orderFeature = true
-        shop.save()
+        await shop.save()
 
         res.json({
             status:true,
@@ -58,14 +60,15 @@ adminRouter.post('/change-status',async(req,res)=>{
             message:"shopStatus was updated"
         })        
     }
+    req.io.emit('changedStatus', !req.body.statusData)
 
 })
 
 // We are changing  the order feature 
 adminRouter.post('/change-order-feature', async (req,res) => {
     const shop = await Shop.findOne({shopID:1})
-
     shop.orderFeature = !req.body.orderFeature
+    req.io.emit('changeOrderFeature', !req.body.orderFeature)
     await shop.save()
     res.json({
         newOrderFeature : !req.body.orderFeature
@@ -82,10 +85,11 @@ adminRouter.get('/controlAdminAccessToken', async(req,res)=>{
 // Sending daily booking for admin
 adminRouter.get('/get-dailyBooking', async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
+    const shop = await Shop.findOne()
     if(latestRecord === null || latestRecord.isClosed === true){
         res.json({
             status:true,
-            dailyQue:encryptData([])
+            dailyQue:null
         })
     }else{
         const now = new Date()
@@ -93,6 +97,7 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
         const responseArray = []
         for(const userBookingID of latestRecord.usersBooking){
             const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
+            const service = shop.services.find(service => service.serviceID == currentUserBooking.serviceID)
 
             const shownDate = new Date(currentUserBooking.registerTime.getTime() +(offset * 60 * 1000))
             const day = String(shownDate.getDate()).padStart(2, '0');
@@ -101,14 +106,18 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
             const hours = String(shownDate.getHours()).padStart(2, '0');
             const minutes = String(shownDate.getMinutes()).padStart(2, '0');
             const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
-        
+            
+
             if(currentUserBooking.userID === undefined){
                 const responseData = {
                     name:currentUserBooking.name,
                     phoneNumber:null,
                     comingWith:currentUserBooking.comingWith,
                     userBookingID:userBookingID,
-                    cutType:currentUserBooking.cutType,
+                    service:{
+                        name:service.name,
+                        estimatedTime:service.estimatedTime
+                    },
                     shownDate:formattedDate
                 }
                 responseArray.push(responseData)
@@ -119,7 +128,10 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
                     phoneNumber:currentUser.phoneNumber,
                     comingWith:currentUserBooking.comingWith,
                     userBookingID:userBookingID,
-                    cutType:currentUserBooking.cutType,
+                    service:{
+                        name:service.name,
+                        estimatedTime:service.estimatedTime
+                    },
                     shownDate:formattedDate
                 }
                 responseArray.push(responseData)
@@ -140,10 +152,10 @@ adminRouter.delete('/delete-user-admin-que/:userBookingID', async (req,res) => {
     latestRecord.usersBooking = latestRecord.usersBooking.filter( id => id !== userBookingID)
     await latestRecord.save()
     const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
+    req.io.emit('remove',{userBookingID:userBookingID,bookingToken:currentUserBooking.bookingToken})
     res.json({
         status:true,
-        userBookingID:userBookingID,
-        bookingToken:currentUserBooking.bookingToken
+        userBookingID:userBookingID
     })
 })
 
@@ -151,63 +163,74 @@ adminRouter.delete('/delete-user-admin-que/:userBookingID', async (req,res) => {
 adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
     const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
-    
-    const currentUserBooking = await UserBooking.findOne({userBookingID:Number(req.params.userBookingID)})
-    const cutType = currentUserBooking.cutType
-    const comingWith = currentUserBooking.comingWith
     const shop = await Shop.findOne() 
-    
-    if(currentUserBooking.userID === undefined){
-        latestRecord.cutCount += 1
-        latestRecord.dailyPaid += shop.cutPrice
 
-        latestMonthRecord.cutCount += 1
-        latestMonthRecord.monthlyPaid += shop.cutPrice    
-    }else{
+    const currentUserBooking = await UserBooking.findOne({userBookingID:Number(req.params.userBookingID)})
+    const service = shop.services.find(service => service.serviceID == currentUserBooking.serviceID)
+    const comingWith = currentUserBooking.comingWith
+
+    const dailyService = latestRecord.dailyCount.find( count => count.serviceID == service.serviceID)
+    const monthlyService = latestMonthRecord.monthlyCount.find( count => count.serviceID == service.serviceID)
+
+    if(currentUserBooking.userID){
         const currentUser = await User.findOne({userID:currentUserBooking.userID})
-        
-        const additionalExtraPerson = comingWith - 1 
-        const aditionalExtraPaid = comingWith === 2 ? shop.cutPrice : comingWith === 3 ? shop.cutPrice * 2 : comingWith === 4 ? shop.cutPrice * 3 : 0
-        if(cutType === 'cut'){
-            currentUser.cutCount += comingWith
-            currentUser.paid += (shop.cutPrice + aditionalExtraPaid)
 
-            latestRecord.cutCount += comingWith
-            latestRecord.dailyPaid += (shop.cutPrice + aditionalExtraPaid)
+        const userService = currentUser.userCount.find( count => count.serviceID == service.serviceID)
+        userService ? userService.count += 1 : currentUser.userCount.push({
+            serviceID: service.serviceID,
+            count:1
+        })
+        const userDefaultService = currentUser.userCount.find(count => count.serviceID == shop.services[0].serviceID)
+        userDefaultService ? userDefaultService.count += (comingWith - 1) : currentUser.userCount.push({
+            serviceID: shop.services[0].serviceID,
+            count: comingWith - 1
+        })
 
-            latestMonthRecord.cutCount += comingWith
-            latestMonthRecord.monthlyPaid += (shop.cutPrice + aditionalExtraPaid)
-        }else{
-            currentUser.cutBCount += 1
-            currentUser.cutCount += additionalExtraPerson
-            currentUser.paid += (shop.cutBPrice + aditionalExtraPaid)
+        currentUser.paid += (service.amount + (comingWith - 1) * shop.services[0].amount)
 
-            latestRecord.cutBCount += 1
-            latestRecord.cutCount += additionalExtraPerson
-            latestRecord.dailyPaid += (shop.cutBPrice + aditionalExtraPaid)
-            
-            latestMonthRecord.cutBCount += 1
-            latestMonthRecord.cutCount += additionalExtraPerson
-            latestMonthRecord.monthlyPaid += (shop.cutBPrice + aditionalExtraPaid)
-        }
-        await currentUser.save()       
+        await currentUser.save()
     }
+
+    dailyService ? dailyService.count += 1 : latestRecord.dailyCount.push({
+        serviceID:service.serviceID,
+        count:1
+    })
+    const dailyDefaultService = latestRecord.dailyCount.find(count => count.serviceID == shop.services[0].serviceID)
+    dailyDefaultService ? dailyDefaultService.count += (comingWith - 1) : latestRecord.dailyCount.push({
+        serviceID: shop.services[0].serviceID,
+        count: comingWith - 1
+    })
+    latestRecord.dailyPaid += (service.amount + (comingWith - 1) * shop.services[0].amount)
+
+
+    monthlyService ? monthlyService.count += 1 : latestMonthRecord.monthlyCount.push({
+        serviceID:service.serviceID,
+        count :1
+    })
+    const monthlyDefaultService = latestMonthRecord.monthlyCount.find(count => count.serviceID == shop.services[0].serviceID)
+    monthlyDefaultService ? monthlyDefaultService.count += (comingWith - 1) : latestMonthRecord.monthlyCount.push({
+        serviceID: shop.services[0].serviceID,
+        count: comingWith - 1
+    })
+    latestMonthRecord.monthlyPaid += (service.amount + (comingWith - 1) * shop.services[0].amount)
+    
 
     latestRecord.usersBooking = latestRecord.usersBooking.filter( id => id !== Number(req.params.userBookingID))
     await latestRecord.save()
     await latestMonthRecord.save()
     
     // These are for shown stats on ui
-    let income = currentUserBooking.cutType === 'cut' ? shop.cutPrice : shop.cutBPrice
-    income +=  (currentUserBooking.comingWith - 1) * shop.cutPrice
+    let income = service.amount
+    income +=  (comingWith - 1) * shop.services[0].amount
     
+    req.io.emit('finished-cut',{userBookingID:Number(req.params.userBookingID),bookingToken:currentUserBooking.bookingToken})
     res.json({
         status:true,
         userBookingID:Number(req.params.userBookingID),
         bookingToken:currentUserBooking.bookingToken,
         finishedDatas:{
-            cutType:cutType,
-            income:income,
+            serviceName:service.name,
+            income,
             comingWith:comingWith
         }
     })
@@ -223,6 +246,7 @@ adminRouter.put('/up-move', async (req,res) => {
 
     await latestRecord.save()
 
+    req.io.emit('up-moved',currentIndex)
     res.json({
         status:true,
         index:currentIndex
@@ -240,6 +264,7 @@ adminRouter.put('/down-move', async (req,res) => {
 
     await latestRecord.save()
 
+    req.io.emit('down-moved',currentIndex)
     res.json({
         status:true,
         index:currentIndex
@@ -248,6 +273,7 @@ adminRouter.put('/down-move', async (req,res) => {
 
 
 adminRouter.post('/fast-register',async (req,res) => {
+    const shop = await Shop.findOne() 
     // date 
     const now = new Date();
     const offset = now.getTimezoneOffset()
@@ -264,7 +290,7 @@ adminRouter.post('/fast-register',async (req,res) => {
     // new user booking
     const newUserBooking = await new UserBooking({
         name:req.body.name,
-        cutType:'cut',
+        serviceID:shop.services[0].serviceID,
         comingWith:1,
         bookingToken:null,
         registerTime:localDate
@@ -272,16 +298,23 @@ adminRouter.post('/fast-register',async (req,res) => {
     latestRecord.usersBooking.push(newUserBooking.userBookingID)
 
     await latestRecord.save()
+
+    const fastUserDatas = encryptData({
+        name:req.body.name,
+        service:{
+            name:shop.services[0].name,
+            estimatedTime:shop.services[0].estimatedTime
+        },
+        comingWith:1,
+        userBookingID:newUserBooking.userBookingID,
+        phoneNumber:null,
+        shownDate:formattedDate
+    })
+
+    req.io.emit('fastUser-register',fastUserDatas)
     res.json({
         status:true,
-        fastUserDatas: encryptData({
-            name:req.body.name,
-            cutType:'cut',
-            comingWith:1,
-            userBookingID:newUserBooking.userBookingID,
-            phoneNumber:null,
-            shownDate:formattedDate
-        })
+        fastUserDatas
     })
 })
 
@@ -319,32 +352,16 @@ adminRouter.post('/decrease-amount', async (req,res) => {
     })
 })
 
-// update our service which is selectted on ui
-adminRouter.put('/update-service-price',async (req,res) => {
-    const shop = await Shop.findOne()
-    if(req.body.service === 'cut'){
-        shop.cutPrice = Number(req.body.value)
-    }else{
-        shop.cutBPrice = Number(req.body.value)
-    }
 
-    await shop.save()
-    res.json({
-        status:true,
-        cutPrice:shop.cutPrice,
-        cutBPrice:shop.cutBPrice
-    })
-})
 
 // get shop settings for shoow on admin ui
 adminRouter.get('/get-shop-settings', async (req,res) => {
     const shop = await Shop.findOne()
     res.json({
         status:true,
-        cutPrice:shop.cutPrice,
-        cutBPrice:shop.cutBPrice,
         showMessage:shop.showMessage,
-        costumFormattedOpeningDate:shop.costumFormattedOpeningDate
+        costumFormattedOpeningDate:shop.costumFormattedOpeningDate,
+        services : shop.services
     })
 })
 
@@ -353,6 +370,7 @@ adminRouter.delete('/delete-message', async (req,res) => {
     const shop = await Shop.findOne()
     shop.showMessage = null
     await shop.save()
+    req.io.emit('deleted-message')
     res.json({
         status:true
     })
@@ -364,6 +382,7 @@ adminRouter.post('/add-message' , async (req,res) => {
     const shop = await Shop.findOne()
     shop.showMessage = req.body.message
     await shop.save()
+    req.io.emit('sended-message', req.body.message)
     res.json({
         status:true,
         message:req.body.message
@@ -389,66 +408,94 @@ adminRouter.get('/get-stats', async (req,res) => {
         }
     })
 
-    if(latestDailyRecord === null){
-        res.json({
-            status:true,
-            stats:encryptData({
-                daily:{
-                    income:0,
-                    cutCount:0,
-                    cutBCount:0
-                },
-                weekly : {
-                    income :0,
-                    cutCount : 0,
-                    cutBCount : 0
-                },
-                monthlyIncome : 0,
-                yearlyIncome : 0            
-            }
-        )})
-    }else{
-        let weeklyIncome = 0
-        let weeklyCCount = 0
-        let weeklyCBCount = 0
-        weeklyRecords.forEach(day => {
-            weeklyIncome += day.dailyPaid
-            weeklyCCount += day.cutCount
-            weeklyCBCount += day.cutBCount
+    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
+    const yearlyRecords = await MonthBooking.find({
+        existMonthDate:{
+            $gte: lastYearDate,
+            $lt:localNowDate
+        }
+    })
 
-        });
-        const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
-        const yearlyRecords = await MonthBooking.find({
-            existMonthDate:{
-                $gte: lastYearDate,
-                $lt:localNowDate
-            }
+    const shop = await Shop.findOne()
+
+    let dailyCounts = []
+    let dailyIncome = 0
+    shop.services.forEach( service => {
+        const dailyService = latestDailyRecord.dailyCount.find( dailyCountService => dailyCountService.serviceID === service.serviceID)
+        if (dailyService == undefined){
+            dailyCounts.push({
+                name:service.name,
+                count:0
+            })
+        }else{
+            dailyCounts.push({
+                name:service.name,
+                count:dailyService.count
+            })
+            dailyIncome += service.amount * dailyService.count
+        }
+        
+    })
+
+
+
+    let weeklyCounts = []
+    let weeklyIncome = 0
+
+    shop.services.forEach( service => {
+        weeklyCounts.push({
+            serviceID:service.serviceID,
+            name:service.name,
+            count:0
         })
-        
-        let yearlyIncome = 0
-        yearlyRecords.forEach(month => {
-            yearlyIncome += month.monthlyPaid
-        });
-        
-        
-        res.json({
-            status:true,
-            stats:encryptData({
-                daily:{
-                    income:latestDailyRecord.dailyPaid,
-                    cutCount:latestDailyRecord.cutCount,
-                    cutBCount:latestDailyRecord.cutBCount
-                },
-                weekly : {
-                    income : weeklyIncome,
-                    cutCount : weeklyCCount,
-                    cutBCount : weeklyCBCount
-                },
-                monthlyIncome : latestMonthRecord.monthlyPaid,
-                yearlyIncome : yearlyIncome            
-            }
-        )})        
-    }
+    })
+
+    weeklyRecords.forEach( dayRecord => {
+        dayRecord.dailyCount.forEach( dayService => {
+            const existService = weeklyCounts.find( weeklyService => weeklyService.serviceID == dayService.serviceID)
+            if(existService) existService.count += dayService.count
+        })
+        weeklyIncome += dayRecord.dailyPaid
+    })
+
+    //let montlyCount = []
+/*     shop.services.find(service => {
+        const monthService = latestMonthRecord.monthlyCount.find( monthCountService => monthCountService.serviceID == service.serviceID)
+        if(monthService == undefined){
+            montlyCount.push({
+                name:service.name,
+                count:0
+            })
+        }else{
+            montlyCount.push({
+                name:service.name,
+                count:monthService.count
+            })
+            monthlyIncome += monthService.count * service.amount
+        }
+    }) */
+
+    let yearlyIncome = 0
+    yearlyRecords.forEach(month => {
+        yearlyIncome += month.monthlyPaid
+    })
+
+    res.json({
+        status:true,
+        stats:encryptData({
+            daily:{
+                dailyCounts,
+                dailyIncome:latestDailyRecord.dailyPaid
+            },
+            weekly:{
+                weeklyCounts,
+                weeklyIncome:weeklyIncome
+            },
+            monthlyIncome:latestMonthRecord.monthlyPaid,
+            yearlyIncome
+        })
+    })
+})
 
 // Setting time fir costum opening  shop
 adminRouter.post('/set-time', async (req,res) => {
@@ -470,13 +517,14 @@ adminRouter.post('/set-time', async (req,res) => {
 
     shop.costumFormattedOpeningDate = formattedDate
     await shop.save()
+    req.io.emit('set-oto-opening-time',{set:true,date:shop.costumOpeningDate})
     res.json({
         status:true,
         formattedDate,
         date:shop.costumOpeningDate
     })
 
-    })
+})
 adminRouter.delete('/cancel-costum-open', async (req,res) => {
     const shop = await Shop.findOne()
 
@@ -485,11 +533,39 @@ adminRouter.delete('/cancel-costum-open', async (req,res) => {
 
     await shop.save()
 
+    req.io.emit('set-oto-opening-time',{set:false,date:null})
     res.json({
         status:true
     })
 })
 
+// Add service 
+adminRouter.post('/add-service', async (req,res) => {
+    const shop = await Shop.findOne()
+    !shop.serviceIDCounter ? shop.serviceIDCounter = 1 : shop.serviceIDCounter += 1
+    if(shop.services){
+        shop.services.push({serviceID:shop.serviceIDCounter,name:req.body.name,estimatedTime:req.body.estimatedTime,amount:req.body.amount})
+    }else{
+        shop.services = new Array()
+        shop.services.push({serviceID:shop.serviceIDCounter,name:req.body.name,estimatedTime:req.body.estimatedTime,amount:req.body.amount})
+    }
+    await shop.save()
+    res.json({
+        status:true,
+        newService:{serviceID:shop.serviceIDCounter,name:req.body.name,estimatedTime:req.body.estimatedTime,amount:req.body.amount}
+    })
 })
+
+// Delete Service
+adminRouter.post('/delete-service', async (req,res) => {
+    const shop = await Shop.findOne()
+    shop.services = [...shop.services].filter((service) => service.serviceID !== req.body.serviceID)
+    await shop.save()
+    res.json({
+        status:true,
+        newServices: shop.services
+    })
+})
+
 
 module.exports = adminRouter;

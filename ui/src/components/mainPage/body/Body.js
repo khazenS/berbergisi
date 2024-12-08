@@ -7,7 +7,7 @@ import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
 import { changeOrderF,  getBooking, getShopStatus, resetDailyQueue, updateOtoDate } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
-import { resetQueueToken, resetUserDatas } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { resetQueueToken } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import InfoBoxes from "./InfoBoxes.js";
 import LineTable from "./LineTable.js";
 
@@ -29,8 +29,8 @@ function Body() {
 
   // We listen 'changedStatus' socket and set value to changedStatus state
   useEffect(()=>{
-    socket.on('changedStatus',(datas) => {
-      setStatus(datas.status)
+    socket.on('changedStatus',(newStatus) => {
+      setStatus(newStatus)
     })
 
     return () => {
@@ -49,7 +49,7 @@ function Body() {
     })
 
     return () => {
-      socket.off('oto-status-changed')
+      socket.off('set-oto-opening-time')
     }
   },[])
 
@@ -59,7 +59,6 @@ function Body() {
       dispatch(getBooking())
     }else if(changedStatus === false){
       // This is for asycn process bug. Extra and previous datas (user and daily que) seem when close-open shop
-      dispatch(resetUserDatas())
       dispatch(resetDailyQueue())
       // When shop closed the cancel button still exists.It is for this bug
       dispatch(resetQueueToken())

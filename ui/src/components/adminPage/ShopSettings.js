@@ -1,21 +1,17 @@
-import { Box, Container, Typography, TextField, Button, Collapse, Grid, IconButton, RadioGroup, FormControlLabel, Radio, FormLabel, ButtonGroup} from "@mui/material";
+import { Box, Container, Typography, TextField, Button, Collapse, Grid, IconButton, ButtonGroup,} from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { addMessage, cancelCostumOpen, deleteMessage, getShop, resetOtoDate,  resetServicePrice, setCutBPrice, setCutPrice, setTimeCostumOpen, updateServicePrice, updateServicePriceValue, updateShopDataMessage, updateShowMessage } from "../../redux/features/adminPageSlices/shopSettingsSlice";
+import { addMessage, addService, cancelCostumOpen, deleteMessage, deleteService, getShop, resetOtoDate, setTimeCostumOpen, updateShowMessage } from "../../redux/features/adminPageSlices/shopSettingsSlice";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { socket } from "../../helpers/socketio"
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function ShopSettings(){
     const navigate = useNavigate()
     const dispatch = useDispatch()
-
-    const [service,setService] = useState(null)
-
-    const [openUpdate, setUpdate] = useState(false)
-    const [updateError,setUpdateError] = useState(false)
-    const servicePrice = useSelector(state => state.shopSettings.servicePrice)
 
     const [openShowMessage,setShowMessage] = useState(false)
     const [showMessageError,setShowMessageError] = useState(false)
@@ -25,12 +21,25 @@ export default function ShopSettings(){
     const [minute, setMinute] = useState('00')
     const [nowDate,setNowDate] = useState(null)
 
-
     const shopData = useSelector( state => state.shopSettings.shopData)
     const showMessage = useSelector( state => state.shopSettings.showMessage)
     const tokenError = useSelector( state => state.shopSettings.expiredError)
     const shopStatus = useSelector(state => state.shopStatus.status)
     const costumShopOpeningState =useSelector( state => state.shopSettings.costumShopOpening)
+    const services = useSelector( state => state.shopSettings.services)
+
+    // This part for services
+    const [openServices,setOpenServices] = useState(false)
+    const [openAddService,setAddService] = useState(false)
+
+    const [serviceName,setserviceName] = useState('')
+    const [serviceTime,setServiceTime] = useState('')
+    const [serviceAmount,setServiceAmount] = useState('')
+
+    const [sNameErr,setSNameErr] = useState(false)
+    const [sTimeErr,setSTimeErr] = useState(false)
+    const [sAmountErr,setSAmountErr] = useState(false)
+
     // token error exists
     useEffect( () => {
         if(tokenError === true){
@@ -42,19 +51,6 @@ export default function ShopSettings(){
     useEffect( () => {
         dispatch(getShop())
     },[dispatch])
-
-
-    const updateServicePriceSubmit = () => {
-        if(servicePrice > 0 && service !== null){
-            dispatch(updateServicePriceValue({service:service,value:servicePrice}))
-            dispatch(resetServicePrice())
-            setUpdate(!openUpdate)
-            setService(null)
-            setUpdateError(false)
-        }else{
-            setUpdateError(true)
-        }
-    }
 
     // sumbit for show message
     const showMessageSubmit = () => {
@@ -117,122 +113,41 @@ export default function ShopSettings(){
 
         setCostumOpen(false)
     }
-    // sockets for raise and discount for all admins
-    useEffect( () => {
-        socket.on('sended-shopSettings',(data) => {
-            dispatch(setCutPrice(data.cutPrice))
-            dispatch(setCutBPrice(data.cutBPrice))
-        })
-
-        return () => {
-            socket.off('sended-shopSettings')
-        }
-    },[dispatch])
-    
-    // sockets for getting message coming from database 
-    useEffect(() => {
-        socket.on('sended-message', (message) => {
-            dispatch(updateShopDataMessage(message))
-        })
-
-        return () => {
-            socket.off('sended-message')
-        }
-    },[dispatch])
-
-    // sockets for delete message 
-    useEffect(() => {
-        socket.on('deleted-message', () => {
-            dispatch(updateShopDataMessage(null))
-        })
-
-        return () => {
-            socket.off('deleted-message')
-        }
-    },[dispatch])
 
 
     useEffect( () => {
         dispatch(resetOtoDate())
         setCostumOpen(false)
-      },[shopStatus,dispatch])
+    },[shopStatus,dispatch])
+
+    const submitAddService = () => {
+        if(serviceName.length < 3 || serviceName.length > 15){
+            setSNameErr(true)
+        }else if(isNaN(serviceTime) || !serviceTime){
+            setSTimeErr(true)
+        }else if(isNaN(serviceAmount) || !serviceAmount){
+            setSAmountErr(true)
+        }else{
+            dispatch(addService({name:serviceName,estimatedTime:Number(serviceTime),amount:Number(serviceAmount)}))
+            resetAddServiceSettings()
+            setAddService(false)
+        }
+    }
+     
+    const resetAddServiceSettings = () => {
+        setserviceName('')
+        setServiceTime('')
+        setServiceAmount('')
+        setSNameErr(false)
+        setSTimeErr(false)
+        setSAmountErr(false)
+    }
+
 
     return (
         <Container sx={{marginTop:5}}>
             <Box sx={{borderBottom:3}}>
                 <Typography variant="h4" sx={{fontWeight:'bold'}}>Dükkan Ayarları</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, width: '100%' }}>
-                <Typography sx={{ fontSize: '0.85rem' }}> Saç:{' '}
-                    <Box component="span" sx={{ fontWeight: 'bold' }}>
-                        {shopData.cutPrice ? shopData.cutPrice : <></>}TL
-                    </Box>
-                </Typography>
-
-                <Typography sx={{ fontSize: '0.85rem' }}> Saç Sakal:{' '} 
-                    <Box component="span" sx={{ fontWeight: 'bold' }}>
-                        {shopData.cutBPrice ? shopData.cutBPrice : <></>}TL
-                    </Box>
-                </Typography>
-                <Typography sx={{ fontSize: '0.85rem' }}> Duyuru mesajı {' '}
-                    <Box component="span" sx={{ fontWeight: 'bold' }}>
-                        {shopData.showMessage ? 'var' : 'yok'}
-                    </Box>
-                </Typography>
-            </Box>
-
-
-
-
-
-            <Box>
-                <Grid container alignItems="center">
-                    <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
-                        <IconButton
-                        onClick={() => {
-                            setUpdate(!openUpdate)
-                            dispatch(resetServicePrice())
-                            setService(null)
-                            setUpdateError(false)
-                        }}
-                        >
-                            {openUpdate ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                        </IconButton>
-
-                        <Typography variant="h6" sx={{opacity:'0.6'}}>
-                        Hiznet Fiyatı Güncelle
-                        </Typography>
-                    </Grid>
-                </Grid>
-                <Collapse in={openUpdate} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
-                <FormLabel sx={{fontWeight:'bold'}}>Hizmet Seç</FormLabel>
-                    <Box>
-                        <RadioGroup row 
-                        onChange={(e) => {
-                            setService(e.target.value)
-                        }}
-                        >
-                        <FormControlLabel value="cut" control={<Radio />} label="Saç" />
-                        <FormControlLabel value="cutB" control={<Radio />} label="Saç Sakal" />
-                        </RadioGroup>
-                    </Box>
-                    <Box sx={{ marginTop: '10px',display:'flex'}}>
-                    <TextField
-                        onChange={(e) => {
-                        setUpdateError(false) 
-                        dispatch(updateServicePrice(e.target.value))
-                        }} 
-                        value={servicePrice}
-                        helperText= {updateError === true ? 'Hizmet seçin veya düzgün bir sayı giriniz.' : ''}
-                        error={updateError} 
-                        size="small" type="number" required label="Zam Miktarı" variant="outlined" 
-                        sx={{width:'60%'}}
-                        />
-                        <Button onClick={() => updateServicePriceSubmit()} variant="contained" color="primary" size="small" sx={{width:'25%',float:'right',marginLeft:2}}>
-                            Yap
-                        </Button>
-                    </Box>
-                </Collapse>
             </Box>
 
             <Box>
@@ -249,7 +164,7 @@ export default function ShopSettings(){
                         </IconButton>
 
                         <Typography variant="h6" sx={{opacity:'0.6'}}>
-                        Duyuru Yayınla
+                        {shopData.showMessage ? 'Duyuru Kaldır' : 'Duyuru Yayınla'}
                         </Typography>
                     </Grid>
                 </Grid>
@@ -285,7 +200,115 @@ export default function ShopSettings(){
                 </Collapse>
             </Box>
             
+
             {shopStatus === false ?
+            <>
+                <Box>
+                <Grid container alignItems="center">
+                    <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
+                        <IconButton
+                        onClick={() => {
+                            setOpenServices(!openServices)
+                            setAddService(false)
+                            resetAddServiceSettings()
+                        }}
+                        >
+                            {openServices ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                        </IconButton>
+
+                        <Typography variant="h6" sx={{opacity:'0.6'}}>
+                        Hizmet Ekle-Çıkar
+                        </Typography>
+                    </Grid>
+                </Grid>
+                <Collapse in={openServices} timeout="auto" unmountOnExit sx={{marginLeft:5}}>
+                    <Box sx={{ marginTop: '10px'}}>
+
+                    <Button onClick={() => {
+                        setAddService(!openAddService)
+                        resetAddServiceSettings()
+                        }} variant="contained" color={openAddService ? "error" : "success"} fullWidth> 
+                        {openAddService ? <RemoveIcon /> : <AddIcon />}
+                    </Button>
+                
+                    <Collapse in={openAddService} timeout="auto" unmountOnExit>
+                        <Grid container spacing={2} sx={{marginTop:1}}>
+                            <Grid item xs={12} sm={6}>
+                                <TextField 
+                                value={serviceName}
+                                onChange={(e) => {
+                                setserviceName(e.target.value)
+                                setSNameErr(false)
+                                }} 
+                                error={sNameErr}
+                                helperText={sNameErr ? "Lütfen 3-15 karakter aralığında isim giriniz." : "* Ekranda gözükecek bir isim giriniz."}
+                                variant="outlined" 
+                                label="Hizmet İsmi" 
+                                size="small" multiline 
+                                fullWidth/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField 
+                                value={serviceTime}
+                                onChange={(e) => {
+                                setServiceTime(e.target.value)
+                                setSTimeErr(false)
+                                }}
+                                error={sTimeErr}
+                                helperText={sTimeErr ? "Lütfen geçerli bir sayı giriniz." : "* Dakika cinsinden bir süre giriniz."}
+                                variant="outlined" 
+                                label="Tahmini süre" 
+                                size="small" multiline 
+                                fullWidth/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField 
+                                value={serviceAmount}
+                                onChange={(e) => {
+                                setServiceAmount(e.target.value)
+                                setSAmountErr(false)
+                                }}
+                                error={sAmountErr}
+                                helperText={ sAmountErr ? "Lütfen geçerli bir sayı giriniz." : "* TL olarak ücret giriniz."}
+                                size="small" multiline variant="outlined"
+                                label="Hizmet ücreti" 
+                                fullWidth/>
+                            </Grid>
+                            <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Button 
+                                onClick={submitAddService}
+                                variant="contained" 
+                                color="success" 
+                                startIcon={<AddIcon />} 
+                                sx={{width:'60%'}}>
+                                    Ekle
+                                </Button>
+                            </Grid>
+                        </Grid>                    
+                    </Collapse>
+                    
+                    {
+                        services && services.length != 0 ?
+                        services.map((service) => (
+                            <Box key={service.serviceID} sx={{boxShadow: '5px 5px 10px rgba(0, 0, 0, 0.5)',display:'flex',justifyContent:'space-between',marginTop:2,borderRadius:3,border:"2px solid blue",alignItems:'center',padding:'1rem'}}>
+                                <Typography sx={{fontWeight:'bold'}}>{service.name}</Typography>
+                                <Typography sx={{fontWeight:'bold'}}>{service.estimatedTime}DK</Typography>
+                                <Typography sx={{fontWeight:'bold'}}>{service.amount}TL</Typography>
+                                <IconButton color="error" size="small" onClick={() => dispatch(deleteService(service.serviceID))}>
+                                    <DeleteIcon />
+                                </IconButton>
+                            </Box>
+                        ))
+                        : <></>
+                    }
+                    
+
+                    </Box>
+                </Collapse>
+            </Box>        
+
+
+
             <Box>
             <Grid container alignItems="center">
                 <Grid item xs={10} sx={{display:'flex',alignItems:'center',marginTop:2}}>
@@ -397,17 +420,9 @@ export default function ShopSettings(){
                 setCostumOpen(!openCostumOpen) }} variant="contained" fullWidth color="error" sx={{marginTop:3}}>iptal et</Button>              
                 </>
                 }
-
-
-
-
-
-                    
-
-
-
             </Collapse>
-        </Box>    
+        </Box>  
+        </>  
         :
         <></>
         }

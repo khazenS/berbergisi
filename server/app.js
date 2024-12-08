@@ -7,15 +7,32 @@ const publicRouter = require('./routes/publicRoute/publicRoute.js');
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const setupSocket = require('./helpers/socket.js');
 const { cryptoMiddleware } = require('./middleware/cryptoMiddleware.js');
+const { default: rateLimit } = require('express-rate-limit');
 
 // Load environment variables
 dotenv.config();
 
 
+// Express app setup
 const app = express();
 
+// Setup of socket
+const server = createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*", 
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket'] 
+});
+
+// passing io to router for use
+app.use((req, res, next) => {
+  req.io = io;  
+  next();
+});
 
 // Basic route
 app.get('/helloworld', (req, res) => {
@@ -31,28 +48,21 @@ app.use(express.json());
 // Crypto Middleware
 app.use(cryptoMiddleware);
 
+//Api request limiter 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 req
+  standardHeaders: true, 
+  legacyHeaders: false, 
+})
+
+app.use(limiter)
+
 // PUBLIC API
 app.use("/api/public", publicRouter);
 
-// Access Middleware
-app.use(accessMiddleware);
-
 // PRIVATE API
-app.use("/api/admin", adminRouter);
-
-
-// Setup of socket
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"]
-  },
-  transports: ['websocket'] 
-});
-
-// Socket processes
-setupSocket(io);
+app.use("/api/admin",accessMiddleware, adminRouter);
 
 // Database Connection
 dbConnection();

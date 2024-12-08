@@ -3,11 +3,12 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import { useDispatch, useSelector } from "react-redux";
 import { decreaseAmount, increaseAmount, registerFastUser, updateAmount, updateFastName } from "../../redux/features/adminPageSlices/fastOpsSlice";
 import { useEffect, useState } from "react";
-import { socket } from "../../helpers/socketio";
 import { addNewUser } from "../../redux/features/adminPageSlices/adminDailyBookingSlice";
 import { useNavigate } from "react-router-dom";
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import { decryptData } from "../../helpers/cryptoProcess";
+import { decreaseAmountStats, increaseAmountStats } from "../../redux/features/adminPageSlices/shopStatsSlice";
 
 
 
@@ -37,9 +38,13 @@ export default function FastOperations(){
 
     // submit handle for fast name 
     const handleFastNameSubmit = () => {
-        if(fastName.length > 3 && fastName.length < 15){
+        if(fastName.length > 2 && fastName.length < 15){
             dispatch(registerFastUser(fastName))
-            dispatch(updateFastName(''))
+            .then( (result) => {
+                const decryptedData = decryptData(result.payload.fastUserDatas)
+                dispatch(addNewUser(decryptedData))
+            })
+            
             setOpenFast(false)
         }else{
             setNameError(true)
@@ -50,6 +55,9 @@ export default function FastOperations(){
     const handleIncreaseSubmit = () => {
         if(changeAmount > 0){
             dispatch(increaseAmount(changeAmount))
+            .then( (result) => {
+                dispatch(increaseAmountStats(result.payload.increasedAmount))
+            })
             dispatch(updateAmount(0))
             setOpenChangeA(false)
         }else{
@@ -60,22 +68,15 @@ export default function FastOperations(){
     const handleDecreaseSubmit = () => {
         if(changeAmount > 0){
             dispatch(decreaseAmount(changeAmount))
+            .then( (result) => {
+                dispatch(decreaseAmountStats(result.payload.decreasedAmount))
+            })
             dispatch(updateAmount(0))
             setOpenChangeA(false)
         }else{
             setAmountError(true)
         }
     }
-    // fast user register socket
-    useEffect( () => {
-        socket.on('fastUser-registered', (fastUserDatas) => {
-            dispatch(addNewUser(fastUserDatas))
-        })
-        return () => {
-            socket.off('fastUser-registered')
-        }
-    })
-
 
     return (
         <div>
@@ -112,7 +113,7 @@ export default function FastOperations(){
                                 dispatch(updateFastName(e.target.value))
                                 }} 
                                 value={fastName}
-                                helperText= {nameError === true ? '4-15 karakter aralığı isim giriniz.' : ''}
+                                helperText= {nameError === true ? '3-15 karakter aralığı isim giriniz.' : ''}
                                 error={nameError} 
                                 size="small" required label="İsim" variant="outlined" 
                                 sx={{width:'65%'}}

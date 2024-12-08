@@ -12,13 +12,12 @@ const userSchema = new mongoose.Schema({
         type:Number,
         unique:true
     },
-    cutCount:{
-        type:Number,
-        default:0
-    },
-    cutBCount:{
-        type:Number,
-        default:0
+    userCount:{
+        type:[{
+            serviceID:Number,
+            count:Number
+        }],
+        default:[]
     },
     paid:{
         type:Number,

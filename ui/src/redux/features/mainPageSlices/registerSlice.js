@@ -1,22 +1,20 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import registerControl from "../../../helpers/registerControl.js";
 import axios from 'axios'
 import { encryptData } from "../../../helpers/cryptoProcess.js";
-import { decryptData } from "../../../helpers/cryptoProcess";
-import { socket } from "../../../helpers/socketio.js";
+
 let initialState = {
     values:{
         name:"",
         phoneNumber:"",
-        cutValue:"cut",
+        serviceID:null,
         comingWithValue:1,
         errors: []
     },
-    userDatas: null,
     queueToken:{
         token:null,
         isLoading:false
     },
+    reqError:false,
     errors:false
 }
 
@@ -24,7 +22,7 @@ export const registerUser = createAsyncThunk('registerUser', async (values)=>{
     const data = {
         name : values.name,
         phoneNumber : values.phoneNumber,
-        cutType:values.cutValue,
+        serviceID:values.serviceID,
         comingWithValue: values.comingWithValue
     }   
     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'public/register-user',{
@@ -57,19 +55,18 @@ export const registerSlice = createSlice({
     reducers:{
         updateRegisterState: (state, action) => {
             const { nameType, value } = action.payload;
-            state.values[nameType] = (nameType === 'phoneNumber' || nameType === 'comingWithValue') ? Number(value) : value;
-            state.values.errors = []; // errors'u boş bir array olarak resetlemek için
-          },
-          controlForFetch: (state) => {
-            const newErrors = registerControl(state.values);
-            state.values.errors = newErrors;
-          },
-          resetUserDatas : (state) => {
-            state.userDatas = null
-          },
-          resetQueueToken : (state) => {
+            state.values[nameType] = (nameType !== 'name') ? Number(value) : value;
+        },
+        resetQueueToken : (state) => {
             state.queueToken.token = null
-          }
+        },
+        resetReqError : (state) => {
+            state.reqError = false
+        },
+        setServiceID: (state,action) => {
+            state.values.serviceID = action.payload
+        }
+
     },
     extraReducers: (builder) => {
         // registerUser processes
@@ -77,12 +74,15 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
-            state.values.cutValue = "cut"
+            if(action.payload.status === false){
+                state.reqError = true;
+            }
+            state.values.serviceID = null
             state.values.comingWithValue = 1
 
-            state.userDatas = decryptData(action.payload.userDatas)
             state.queueToken.token = action.payload.queueToken
-            localStorage.setItem('queueToken',action.payload.queueToken)
+            localStorage.setItem('queueToken',action.payload.queueToken)  
+
         })
         builder.addCase(registerUser.rejected, (state) => {
             console.log('registerUser error alert!')
@@ -110,14 +110,8 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(cancelQue.fulfilled,(state,action) =>{
-            if(action.payload.status === true){
-                state.queueToken.token = null
-                localStorage.removeItem('queueToken')
-                socket.emit('cancel-que', action.payload.userBookingID)
-            }else{
-                state.queueToken.token = null
-                localStorage.removeItem('queueToken')
-            }
+            state.queueToken.token = null
+            localStorage.removeItem('queueToken')
         })
         builder.addCase(cancelQue.rejected,(state) => {
             state.errors = true
@@ -126,5 +120,5 @@ export const registerSlice = createSlice({
     }
 })
 
-export const {updateRegisterState,controlForFetch,resetUserDatas,resetQueueToken} = registerSlice.actions
+export const {updateRegisterState,resetQueueToken,resetReqError,setServiceID} = registerSlice.actions
 export default registerSlice.reducer

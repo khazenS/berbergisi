@@ -8,8 +8,6 @@ const shopSchema= new mongoose.Schema({
     },
     shopStatus:Boolean,
     orderFeature:Boolean,
-    cutPrice:Number,
-    cutBPrice:Number,
     showMessage:String,
     costumOpeningDate: {
         type:Date,
@@ -18,7 +16,19 @@ const shopSchema= new mongoose.Schema({
     costumFormattedOpeningDate: {
         type:String,
         default:null
+    },
+    services : {
+        type : [{
+            serviceID:Number,
+            name:String,
+            estimatedTime:Number,
+            amount:Number
+        }]
+    },
+    serviceIDCounter:{
+        type:Number
     }
+
 })
 
 const Shop = mongoose.model('Shop',shopSchema,'Shop')

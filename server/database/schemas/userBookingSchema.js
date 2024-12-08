@@ -11,8 +11,8 @@ const userBookingSchema = new mongoose.Schema({
         type:String,
         default:''
     },
-    cutType:{
-        type:String
+    serviceID:{
+        type:Number
     },
     comingWith:{
         type:Number

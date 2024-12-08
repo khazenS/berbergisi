@@ -2,14 +2,15 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Modal from "@mui/material/Modal";
-import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField , Alert, Stack } from "@mui/material";
+import { Container, Fab, FormControlLabel, FormHelperText, FormLabel, InputAdornment, Radio, RadioGroup, TextField , Alert, Stack, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useDispatch, useSelector } from "react-redux";
-import { cancelQue, checkQueueToken, controlForFetch,registerUser,resetQueueToken,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
+import { cancelQue, checkQueueToken,registerUser,resetQueueToken,setServiceID,updateRegisterState } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import { socket } from "../../../helpers/socketio.js";
 import { changeOrderF, removeUserFromQue } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { jwtDecode } from "jwt-decode";
+import { decryptData } from "../../../helpers/cryptoProcess.js";
 const style = {
   position: "absolute",
   top: "50%",
@@ -28,9 +29,10 @@ export default function LineModal() {
   const [open, setOpen] = React.useState(false);
   const dispatch = useDispatch()
   // This is for setting errors for fetch data
-  const [submitClicked,setSubmitClicked] = React.useState(false)
   const [samePhoneError,setSamePhoneError] = React.useState(false)
-
+  const [nameError,setNameError] = React.useState(false)
+  const [phoneError,setPhoneError] = React.useState(false)
+  const [noServiceError,setServiceError] = React.useState(false)
   // orderFeature  for button visibility
   const orderFeature = useSelector(state => state.booking.orderFeature)
   //registerSlice state
@@ -39,6 +41,8 @@ export default function LineModal() {
   const queueToken = useSelector(state => state.register.queueToken)
   // daily queue state 
   const dailyQue = useSelector( state => state.booking.dailyQueue)
+  // services state
+  const services = useSelector( state => state.booking.services) 
   //Functions for model process
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
@@ -48,30 +52,58 @@ export default function LineModal() {
   };
   const onInpF = (name,value)=>{
     dispatch(updateRegisterState({'nameType':name,'value':value}))
+
+    // reset all errors when typing
+    setNameError(false)
+    setPhoneError(false)
+    setSamePhoneError(false)
   }
 
   //submit process
   const handleSubmit = () =>{
-    setSubmitClicked(true)
-    dispatch(controlForFetch())
-  }
-  React.useEffect(()=>{
-    if(submitClicked){
-      const phoneNumberIndex = dailyQue.findIndex(user => user.phoneNumber === state.phoneNumber)
-      if(state.errors.length === 0 ){
-        if(phoneNumberIndex !== -1){
-          setSamePhoneError(true)
-        }else{
-          dispatch(registerUser(state))
-          setOpen(false)
-        }
-      }
-      setTimeout(()=>{
-        setSamePhoneError(false)
-      },2000)
-      setSubmitClicked(false)
+    let isNameError = false;
+    let isPhoneError = false;
+    let isSame = false
+
+    // controlling there are any error on inputs
+    if(state.name.length < 3 || state.name.length > 18){
+      isNameError = true
+      setNameError(true)
     }
-  },[state,submitClicked,dispatch,dailyQue])
+    if(state.phoneNumber.toString().length !== 10){
+      isPhoneError = true
+      setPhoneError(true)
+    }
+    // controlling phone numbers is same
+    dailyQue.forEach(user => {
+      if(user.phoneNumber != null && decryptData(user.phoneNumber) === state.phoneNumber){
+        isSame = true
+      }
+    });
+
+    if(isNameError){
+      setNameError(true)
+    }else if(isPhoneError){
+      setPhoneError(true)
+    }else if(services === null || services.length === 0){
+      setServiceError(true)
+    }else{
+      if(isSame === true){
+        setSamePhoneError(true)
+      }else{
+        if(state.serviceID === null) setServiceID(services[0].serviceID);
+        dispatch(registerUser(state))                                                                                                                
+        setOpen(false)
+      }      
+    }
+  }
+
+  // set serviceID as a default value 
+  React.useEffect( () => {
+    if(services && services.length > 0 && !state.serviceID){
+      dispatch(updateRegisterState({'nameType':'serviceID','value':services[0].serviceID}))
+    }
+  },[services])
 
   // queue token processes
   React.useEffect( () => {
@@ -122,8 +154,8 @@ export default function LineModal() {
   },[dispatch])
 
   React.useEffect( () => {
-    socket.on('changedOrderFeature', (newOrderFeature) => {
-      dispatch(changeOrderF(newOrderFeature.orderFeature))
+    socket.on('changeOrderFeature', (newOrderFeature) => {
+      dispatch(changeOrderF(newOrderFeature))
     })
 
     return () => {
@@ -131,9 +163,11 @@ export default function LineModal() {
 
     }
   },[dispatch]) 
+
   const handleCancel = () => {
     dispatch(cancelQue(queueToken.token))
   }
+
 
   return (
     <Container>
@@ -182,22 +216,32 @@ export default function LineModal() {
           <Box>
             <Fab color="error" size="small" onClick={handleClose} sx={{ marginLeft: "auto", display: "flex" }}><CloseIcon /></Fab>
             <TextField onChange={(e) =>{onInpF('name',e.target.value)}} 
-            error={state.errors.indexOf("nameRequired") !== -1} helperText={state.errors.indexOf("nameRequired") !== -1?"Lütfen tam isminizi giriniz.":""} 
+            error={nameError} helperText={nameError ?"Lütfen tam isminizi giriniz.":""} 
             label="İsminiz" variant="outlined" inputProps={{ maxLength: 20 }} InputLabelProps={{shrink: true}} sx={{display:'flex' , m:2}}/>
 
             <TextField onChange={(e) =>{onInpF('phoneNumber',e.target.value)}} 
-            error={state.errors.indexOf("wrongNumber") !== -1} helperText={state.errors.indexOf("wrongNumber") !== -1?"Lütfen numaranızı eksiksiz giriniz.":""}  
-            type="number" InputLabelProps={{shrink: true}} label="Telefon Numaranız" variant="outlined"   
-            sx={{display:'flex',m:2}} InputProps={{startAdornment: (<InputAdornment position="start">+90</InputAdornment>),}}/>
+            error={phoneError} helperText={phoneError ? "Lütfen numaranızı eksiksiz giriniz.":""}
+            type="number" InputLabelProps={{shrink: true}} label="Telefon Numaranız" variant="outlined"
+            sx={{display:'flex',m:2}} InputProps={{startAdornment: (<InputAdornment position="start">+90</InputAdornment>)}}/>
             
-            <Box sx={{margin:2}}>
-            <FormLabel >Traş</FormLabel>
-              <RadioGroup onChange={(e) =>{onInpF('cutValue',e.target.value)}} row defaultValue="cut" name="radio-buttons-group">
-              <FormControlLabel value="cut" control={<Radio />} label="Saç" />
-              <FormControlLabel value="cutB" control={<Radio />} label="Saç-Sakal" />
-              <FormHelperText>Bu tahmini süre hesaplamada önemlidir.</FormHelperText>
-              </RadioGroup>               
-            </Box>
+            {services.length > 0 ?
+              <Box sx={{margin:2}}>
+              <FormLabel >Hizmet seçiniz</FormLabel>
+                <RadioGroup onChange={(e) =>{onInpF('serviceID',e.target.value)}} row defaultValue={services[0].serviceID}  name="radio-buttons-group">
+
+                {services.map( (service) => (
+                  <FormControlLabel key={service.serviceID} value={service.serviceID} control={<Radio />} label={service.name}></FormControlLabel>
+                ))}
+                </RadioGroup>    
+                <FormHelperText>Bu tahmini süre hesaplamada önemlidir.</FormHelperText>           
+              </Box>
+              :
+              <Box sx={{margin:2}}>
+                <Typography variant="h5">Dükkan sahibinin hizmet eklemesini bekleyiniz.</Typography> 
+              </Box>
+              
+            }
+
 
             <Box sx={{margin:2}}>
             <FormLabel>Kaç kişisiniz</FormLabel>
@@ -211,6 +255,9 @@ export default function LineModal() {
             </Box>
             {
               samePhoneError === true ? <Alert sx={{marginTop:3,marginBottom:3}} severity="error" variant="filled">Bu telefon numarası zaten sırada</Alert> : <Box></Box>
+            }
+            {
+              noServiceError ? <Alert sx={{marginTop:3,marginBottom:3}} severity="error" variant="filled">Lütfen hizmet seçiniz.</Alert> : <></>
             }
             <Button variant="contained" onClick={()=>{handleSubmit()}} color="success" size="large" sx={{fontWeight:'bold',textTransform:'none'}}fullWidth={true} endIcon={<ArrowForwardIcon></ArrowForwardIcon>}>Sıraya gir</Button>
 

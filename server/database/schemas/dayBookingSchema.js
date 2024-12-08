@@ -14,13 +14,12 @@ const dayBookingSchema = new mongoose.Schema({
         type : Boolean,
         default : false
     },
-    cutCount : {
-        type:Number,
-        default : 0
-    },
-    cutBCount : {
-        type : Number,
-        default : 0
+    dailyCount:{
+        type:[{
+            serviceID:Number,
+            count:Number
+        }],
+        default:[]
     },
     dailyPaid : {
         type:Number,

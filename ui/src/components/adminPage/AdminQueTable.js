@@ -10,6 +10,8 @@ import { addNewUser, getDailyBookingAdmin, cancelUserFromAdminQue, resetDailyQue
 import { changeOrderFeature } from  '../../redux/features/adminPageSlices/shopStatusSlice'
 import { socket } from "../../helpers/socketio";
 import { useNavigate } from "react-router-dom";
+import { newFinishedCut } from "../../redux/features/adminPageSlices/shopStatsSlice";
+import { decryptData } from "../../helpers/cryptoProcess";
 
 //Row 
 function Row(props){
@@ -17,12 +19,20 @@ function Row(props){
     const { dailyQueue } = props
     const [open,setOpen] = useState(false)
     const dispatch = useDispatch()
+
+
     const handleCancel = (userBookingID) => {
         dispatch(removeUserFromAdminQue(userBookingID))
+        setOpen(false)
     }
 
     const handleFinishCut = (userBookingID) => {
         dispatch(cutFinished(userBookingID))
+        .then((result) => {
+            // This is for uupdating shop stats
+            dispatch((newFinishedCut({income:result.payload.finishedDatas.income,serviceName:result.payload.finishedDatas.serviceName,comingWith:result.payload.finishedDatas.comingWith})))
+        })
+        setOpen(false)
     }
 
     const handleUpMove = () => {
@@ -96,7 +106,7 @@ function Row(props){
                             </Grid>
                             <Grid container spacing={2}>
                                 <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
-                                    {row.cutType === 'cut' ? 'Saç'  : 'Saç-Sakal'}
+                                    {row.service.name}
                                 </Grid>
                                 <Grid item xs={6} sx={{textAlign:'center',opacity:'0.75'}}>
                                     {row.shownDate}
@@ -123,7 +133,7 @@ export default function AdminQueTable(){
             navigate('/adminLogin')
         }
     },[cancelTokenError,navigate])
-    // Control of shop that is close or open if shopStatus is false then convert calue of que to null for new opening
+    // Control of shop that is close or open if shopStatus is false then convert value of que to null for new opening
     useEffect(() => {
         if(shopStatus === true){
             dispatch(getDailyBookingAdmin());
@@ -135,8 +145,9 @@ export default function AdminQueTable(){
 
     // Listen socket for adding new user to que then print it out
     useEffect(()=>{
-        socket.on('newUser',(user) => {
-          dispatch(addNewUser(user))
+        socket.on('newUser',(cryptedData) => {
+          const decryptedData = decryptData((cryptedData))
+          dispatch(addNewUser(decryptedData))
         })
     
         return () => {
@@ -153,48 +164,7 @@ export default function AdminQueTable(){
           socket.off('cancel')
         }
     },[dispatch])
-  
-    // Remove socket for cancelling user from que on admin panel
-    useEffect( () => {
-        socket.on('remove',({userBookingID,bookingToken}) =>{
-            dispatch(cancelUserFromAdminQue(userBookingID))
-        })
-        return () => {
-          socket.off('remove')
-        }
-    },[dispatch])
 
-    // finish cut socket for cancelling user from que on admin panel
-    useEffect( () => {
-        socket.on('finished-cut',({userBookingID,bookingToken}) =>{
-            dispatch(cancelUserFromAdminQue(userBookingID))
-        })
-        return () => {
-          socket.off('finished-cut')
-        }
-    },[dispatch])
-
-    // up move socket and process
-    useEffect( () => {
-        socket.on('up-moved',({index}) => {
-        dispatch(upMove(index))
-        })
-
-        return () => {
-            socket.off('up-moved')
-        }
-    },[dispatch])
-
-    // down move socket and process
-    useEffect( () => {
-        socket.on('down-moved',({index}) => {
-        dispatch(downMove(index))
-        })
-
-        return () => {
-            socket.off('down-moved')
-        }
-    },[dispatch])
 
     if(shopStatus === true && dailyQueue !== null){
         return (
