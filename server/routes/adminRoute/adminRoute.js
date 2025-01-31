@@ -400,7 +400,13 @@ adminRouter.get('/get-stats', async (req,res) => {
     const lastYearDate = new Date();
     lastYearDate.setFullYear(localNowDate.getFullYear() - 1);
 
-    const latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1}) 
+    let latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1}) 
+    // This if for creating new monthRecord when you set up the app first time
+    if(!latestDailyRecord) {
+        latestDailyRecord = await new DayBooking({
+            existDayDate:localNowDate
+        }).save()
+    }
     const weeklyRecords = await DayBooking.find({
         existDayDate:{
             $gte: aWeekAgoDate,
@@ -408,7 +414,14 @@ adminRouter.get('/get-stats', async (req,res) => {
         }
     })
 
-    const latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
+    let latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
+    // This if for creating new monthRecord when you set up the app first time
+    if(!latestMonthRecord) {
+        const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
+        latestMonthRecord = await new MonthBooking({
+            existMonthDate:monthDate
+        }).save()
+    }
     const yearlyRecords = await MonthBooking.find({
         existMonthDate:{
             $gte: lastYearDate,
@@ -420,7 +433,7 @@ adminRouter.get('/get-stats', async (req,res) => {
 
     let dailyCounts = []
     let dailyIncome = 0
-    shop.services.forEach( service => {
+        shop.services.forEach( service => {
         const dailyService = latestDailyRecord.dailyCount.find( dailyCountService => dailyCountService.serviceID === service.serviceID)
         if (dailyService == undefined){
             dailyCounts.push({
@@ -434,11 +447,7 @@ adminRouter.get('/get-stats', async (req,res) => {
             })
             dailyIncome += service.amount * dailyService.count
         }
-        
     })
-
-
-
     let weeklyCounts = []
     let weeklyIncome = 0
 

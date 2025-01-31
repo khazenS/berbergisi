@@ -48,16 +48,6 @@ app.use(express.json());
 // Crypto Middleware
 app.use(cryptoMiddleware);
 
-//Api request limiter 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // max 100 req
-  standardHeaders: true, 
-  legacyHeaders: false, 
-})
-
-app.use(limiter)
-
 // PUBLIC API
 app.use("/api/public", publicRouter);
 

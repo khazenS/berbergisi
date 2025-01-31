@@ -61,8 +61,7 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
     }
 })
 
-// User register registerLimiter ekle
-publicRouter.post('/register-user',registerLimiter ,async (req,res) => {
+publicRouter.post('/register-user' ,async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
     // date 
     const now = new Date();

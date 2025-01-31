@@ -1,12 +1,11 @@
-import { Box, Container, Stack, Typography } from "@mui/material"
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Container, Stack, Typography } from "@mui/material"
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getMessage, updateMessage } from "../../../redux/features/mainPageSlices/showMessageSlice";
 import { socket } from "../../../helpers/socketio";
 import CampaignIcon from '@mui/icons-material/Campaign';
-
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 function BodyInformation(){
     const dispatch = useDispatch()
 
@@ -43,14 +42,51 @@ function BodyInformation(){
             </Typography>
         </Container>
 
-        <Stack sx={{marginTop:3}}>
-            <Alert variant="outlined" severity="info" color="warning" sx={{marginTop:5,color:"black",alignItems:"center",fontWeight:"bold"}}>
-            <AlertTitle sx={{fontWeight:"700",textAlign:"center"}}>BİLGİLENDİRME</AlertTitle>
-            Sıra sistemi uygulanmaktadır. 
-            Aşşağıda ki kısımdan sıradaki kişi sayısını ve TAHMİNİ süreyi öğrenebilirsiniz 
-            ve isterseniz sıra alabilirsiniz sıranız geldiğinde size haber verilecektir.</Alert> 
-        </Stack>
 
+        <Accordion sx={{
+            marginTop:3,
+            boxShadow:'none',
+            border: "2px solid rgba(0.75,0.75,0.75,0.2)",
+            borderRadius:'3%'
+        }}>
+        <AccordionSummary
+          expandIcon={<ArrowDownwardIcon />}
+        >
+          <InfoOutlinedIcon />
+          <Typography component="span" sx={{fontWeight:'bold',marginLeft:1}}>Genel Bilgilendirme</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography>
+            - Sıra sistemi uygulanmaktadır.
+          </Typography>
+          <Typography sx={{marginTop:2}}>
+            - Eğer dükkan açıksa ve dükkan sahibi sıra almayı kapatmamışsa "Hemen Sıra Al" kısmından sıra alabilirsiniz , sıra size geldiğinde aranacaksınız.
+          </Typography>
+        </AccordionDetails>
+      </Accordion>
+
+
+      <Accordion sx={{
+            marginTop:3,
+            boxShadow:'none',
+            border: "2px solid rgba(0.75,0.75,0.75,0.2) ",
+            borderRadius:'3%'
+        }}>
+        <AccordionSummary
+          expandIcon={<ArrowDownwardIcon />}
+        >
+          <InfoOutlinedIcon />
+          <Typography component="span" sx={{fontWeight:'bold',marginLeft:1}}>Sıra Iptali Bilgilendirmesi</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography>
+            - Sıraya girdikten sonra sıranızı iptal edebilirsiniz.
+          </Typography>
+          <Typography sx={{marginTop:2}}>
+            - Güvenlik nedeniyle 6 saat içerisinde maksimum 2 kere sıranızı iptal edebilirsiniz.
+          </Typography>
+        </AccordionDetails>
+      </Accordion>
         {
             message ? 
                 <Box sx={{marginTop:3,display:'flex',justifyContent:'center',marginY:5}} >
