@@ -168,7 +168,7 @@ export default function AdminQueTable(){
 
     if(shopStatus === true && dailyQueue !== null){
         return (
-            <Container sx={{marginTop:'15vh'}}>
+            <Container sx={{marginTop:1}}>
                 {
                     dailyQueue.length === 0 ? <Box sx={{borderStyle:'dotted'}}><Typography variant="h4" sx={{fontWeight:'bold',textAlign:'center'}}>Sıra Boş</Typography></Box> : 
                     <Paper sx={{ width: '100%', overflow: 'hidden',marginTop:1}} elevation={10}>

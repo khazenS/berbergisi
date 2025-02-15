@@ -6,9 +6,9 @@ const adminRouter = require('./routes/adminRoute/adminRoute.js');
 const publicRouter = require('./routes/publicRoute/publicRoute.js');
 const cors = require('cors');
 const { createServer } = require('http');
-const { Server } = require('socket.io');
 const { cryptoMiddleware } = require('./middleware/cryptoMiddleware.js');
-const { default: rateLimit } = require('express-rate-limit');
+const { initializeSocket } = require('./helpers/socketio.js');
+const { requestLimiter } = require('./middleware/requestLimiter.js');
 
 // Load environment variables
 dotenv.config();
@@ -20,19 +20,8 @@ const app = express();
 // Setup of socket
 const server = createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"]
-  },
-  transports: ['websocket'] 
-});
-
-// passing io to router for use
-app.use((req, res, next) => {
-  req.io = io;  
-  next();
-});
+// Initilize the socket here
+initializeSocket(server)
 
 // Basic route
 app.get('/helloworld', (req, res) => {
@@ -49,7 +38,7 @@ app.use(express.json());
 app.use(cryptoMiddleware);
 
 // PUBLIC API
-app.use("/api/public", publicRouter);
+app.use("/api/public",publicRouter);
 
 // PRIVATE API
 app.use("/api/admin",accessMiddleware, adminRouter);

@@ -7,6 +7,8 @@ import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import { useNavigate } from 'react-router-dom';
+import Clock from '../mainPage/Clock.js';
+import StoreIcon from '@mui/icons-material/Store';
 
 export default function AdminFirstPart(){
     const dispatch = useDispatch()
@@ -64,17 +66,11 @@ export default function AdminFirstPart(){
         }
         else if(shopStatusState.status !== null){
             return (
-                <Container sx={{display: 'flex',height: '10vh',flexDirection: 'column',marginTop:2}}>
-                <Button variant='contained' color='error' sx={{fontWeight:'bold'}} onClick={() => {handleLogoutButton()}}>Çıkış Yap</Button>
-                <Grid container spacing={2} sx={{marginTop:2}}>
-                    <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Button  variant="contained" color='success' sx={{fontWeight:'bold'}} onClick={() => {changeProcessFunc(shopStatusState.status)}}>Dükkanı {shopStatusState.status === true ? 'kapat' : 'aç'}</Button>
-                  </Grid>
-                  <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{fontWeight:'bold'}}>Dükkan {shopStatusState.status === true ? 'açık' : 'kapalı'}</Typography>
-                  </Grid>
-                </Grid>
-              </Container>
+                <Container sx={{display: 'flex',flexDirection: 'column'}}>
+                    <Button variant='contained' color='error' sx={{fontWeight:'bold'}} onClick={() => {handleLogoutButton()}}>Çıkış Yap</Button>
+                    <Button  startIcon={<StoreIcon/>} variant="contained" color={shopStatusState.status ? 'error' : 'success'} size='large' sx={{fontWeight:'bold',marginTop:4}} onClick={() => {changeProcessFunc(shopStatusState.status)}}>Dükkanı {shopStatusState.status === true ? 'kapat' : 'aç'}</Button>
+                    <Clock/>
+                </Container>
             )
         }    
     }

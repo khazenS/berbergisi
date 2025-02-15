@@ -14,7 +14,8 @@ let initialState = {
         token:null,
         isLoading:false
     },
-    reqError:false,
+    registerReqError:false,
+    totalReqError:false,
     errors:false
 }
 
@@ -61,10 +62,13 @@ export const registerSlice = createSlice({
             state.queueToken.token = null
         },
         resetReqError : (state) => {
-            state.reqError = false
+            state.registerReqError = false
         },
         setServiceID: (state,action) => {
             state.values.serviceID = action.payload
+        },
+        resgisterResetTRE: (state,action) => {
+            state.totalReqError = false
         }
 
     },
@@ -74,15 +78,15 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
-            if(action.payload.status === false){
-                state.reqError = true;
+            console.log(action.payload)
+            if(action.payload.status == false && action.payload.req_error == 'register') state.registerReqError = true
+            else{
+                state.values.serviceID = null
+                state.values.comingWithValue = 1
+
+                state.queueToken.token = action.payload.queueToken
+                localStorage.setItem('queueToken',action.payload.queueToken)                  
             }
-            state.values.serviceID = null
-            state.values.comingWithValue = 1
-
-            state.queueToken.token = action.payload.queueToken
-            localStorage.setItem('queueToken',action.payload.queueToken)  
-
         })
         builder.addCase(registerUser.rejected, (state) => {
             console.log('registerUser error alert!')
@@ -94,10 +98,14 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(checkQueueToken.fulfilled , (state,action) => {
-            if(action.payload.status === true){
-                state.queueToken.token = action.payload.queueToken
+            if(action.payload.request_error && action.payload.reqErrorType == 'total') state.totalReqError = true
+            else{
+                if(action.payload.status === true){
+                    state.queueToken.token = action.payload.queueToken
+                }
+                state.queueToken.isLoading = false
             }
-            state.queueToken.isLoading = false
+            
             
         })
         builder.addCase(checkQueueToken.rejected , (state) => {
@@ -110,8 +118,11 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(cancelQue.fulfilled,(state,action) =>{
-            state.queueToken.token = null
-            localStorage.removeItem('queueToken')
+            if(action.payload.request_error && action.payload.reqErrorType == 'total') state.totalReqError = true
+            else{
+                state.queueToken.token = null
+                localStorage.removeItem('queueToken')                
+            }
         })
         builder.addCase(cancelQue.rejected,(state) => {
             state.errors = true
@@ -120,5 +131,5 @@ export const registerSlice = createSlice({
     }
 })
 
-export const {updateRegisterState,resetQueueToken,resetReqError,setServiceID} = registerSlice.actions
+export const {updateRegisterState,resetQueueToken,resetReqError,setServiceID,resgisterResetTRE} = registerSlice.actions
 export default registerSlice.reducer

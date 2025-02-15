@@ -7,7 +7,8 @@ const { encryptData } = require('../../helpers/cryptoProcess.js');
 const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
-const { registerLimiter } = require('../../middleware/rateLimitMidleware.js');
+const { getIO } = require('../../helpers/socketio.js');
+const { registerRequestLimiter } = require('../../middleware/requestLimiter.js');
 
 const publicRouter = express.Router()
 
@@ -44,7 +45,7 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
             newMonthRecord.dayBooking.push(newDayBooking.dayBookingID)
             await newMonthRecord.save()
         }
-        req.io.emit('oto-status-change', {status: true});
+        getIO().emit('oto-status-change', {status: true});
         res.json({
             status:true,
             shopStatus: shop.shopStatus,
@@ -61,7 +62,7 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
     }
 })
 
-publicRouter.post('/register-user' ,async (req,res) => {
+publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
     // date 
     const now = new Date();
@@ -125,7 +126,7 @@ publicRouter.post('/register-user' ,async (req,res) => {
             shownDate:formattedDate
         }
     )
-    req.io.emit('newUser',cryptedData)
+    getIO().emit('newUser',cryptedData)
     res.json({
         status:true,
         queueToken:bookingToken
@@ -206,7 +207,7 @@ publicRouter.post('/cancel-queue', async (req,res) => {
         if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
             dayBooking.usersBooking = dayBooking.usersBooking.filter( userBookingID => userBookingID !== userBooking.userBookingID)
             await dayBooking.save()
-            req.io.emit('cancel', userBooking.userBookingID)
+            getIO().emit('cancel', userBooking.userBookingID)
             res.json({
                 status:true,
                 userBookingID:userBooking.userBookingID

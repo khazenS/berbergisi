@@ -11,7 +11,8 @@ let initialState  = {
     dailyQueue : null,
     dayBookingID : null,
     services:[],
-    error:false
+    error:false,
+    totalReqError:false
 }
 
 // Create or get daily booking for show it
@@ -65,6 +66,9 @@ export const dailyBookingSlice = createSlice({
         },
         updateOtoDate : (state,action) => {
             state.otoOpeningDate = action.payload
+        },
+        dailyResetTRE: (state,action) => {
+            state.totalReqError = false
         }
     },
     extraReducers: (builder) => {
@@ -74,10 +78,14 @@ export const dailyBookingSlice = createSlice({
             state.error = false
         })
         builder.addCase(getShopStatus.fulfilled,(state,action) => {
-            state.shopStatus = action.payload.shopStatus
-            state.orderFeature = action.payload.orderFeature
-            state.otoOpeningDate = action.payload.costumOpeningDate
-            state.isLoading = false
+            if(action.payload.request_error && action.payload.reqErrorType == 'total') state.totalReqError = true
+            else{
+                state.shopStatus = action.payload.shopStatus
+                state.orderFeature = action.payload.orderFeature
+                state.otoOpeningDate = action.payload.costumOpeningDate
+                state.isLoading = false                
+            }
+
         })
         builder.addCase(getShopStatus.rejected,(state) => {
             state.error = true
@@ -89,10 +97,14 @@ export const dailyBookingSlice = createSlice({
             state.isLoading = true
         })
         builder.addCase(getBooking.fulfilled , (state,action) => {
-            state.dailyQueue = decryptData(action.payload.dailyQue)
-            state.dayBookingID = decryptData(action.payload.dayBookingID)
-            state.services = action.payload.services
-            state.isLoading = false
+            if(action.payload.request_error && action.payload.reqErrorType == 'total') state.totalReqError = true
+            else{
+                state.dailyQueue = decryptData(action.payload.dailyQue)
+                state.dayBookingID = decryptData(action.payload.dayBookingID)
+                state.services = action.payload.services
+                state.isLoading = false                
+            }
+
         })
         builder.addCase(getBooking.rejected , (state) => {
             state.error = true
@@ -102,5 +114,5 @@ export const dailyBookingSlice = createSlice({
     }
 })
 
-export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove,changeOrderF,updateOtoDate} = dailyBookingSlice.actions
+export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove,changeOrderF,updateOtoDate,dailyResetTRE} = dailyBookingSlice.actions
 export default dailyBookingSlice.reducer

@@ -221,15 +221,21 @@ function InfoBoxes(){
                         <Typography sx={{fontWeight:'bold',fontSize:'1.25rem'}}> {userName} </Typography>
                     </Grid>
                     <Grid xs={6} item sx={{display:"flex",justifyContent:"left",alignItems:"center",marginTop:2}} >
-                        <Avatar sx={{ bgcolor:"green", height:48  , width: 48 }}></Avatar>
-                        { costumer === null ? null : <Typography sx={{ fontWeight: "bold", fontSize: "1.35rem",marginLeft:3}}>{costumer} kişi</Typography>}
+                        <Avatar sx={{ bgcolor:"green", height:36  , width: 36 }}></Avatar>
+                        <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Typography sx={{fontSize:'0.85rem'}}>Önünüzdeki kişi</Typography>
+                        { costumer === null ? null : <Typography sx={{ fontWeight: "bold", fontSize: "1.15rem"}}>{costumer} kişi</Typography>}
+                        </Container>
                     </Grid>
-                    <Grid xs={6} item sx={{display:"flex",justifyContent:"left",alignItems:"center",marginTop:2}} >
-                        <Avatar sx={{ bgcolor:"blue",height:48  , width: 48  }}><AccessAlarmIcon></AccessAlarmIcon></Avatar>
+                    <Grid xs={6} item sx={{display:"flex",justifyContent:"center",alignItems:"center",marginTop:2}} >
+                        <Avatar sx={{ bgcolor:"blue",height:36  , width: 36  }}><AccessAlarmIcon></AccessAlarmIcon></Avatar>
+                        <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Typography sx={{fontSize:'0.85rem'}}>Tahmini Zaman</Typography>
                             {costumer === null || estimatedHour === null || estimatedMunite === null ? null : 
-                            <Typography sx={{ fontWeight: "bold",fontSize:"1.35rem",marginLeft:3}}>{
+                            <Typography sx={{ fontWeight: "bold",fontSize:"1.15rem"}}>{
                                 costumer === 0 ? 'Boş' : estimatedHour === 0 ? estimatedMunite + ' dk' : estimatedMunite === 0 ? estimatedHour + ' s' : estimatedHour + ' s' + estimatedMunite + ' dk'
-                            }</Typography>}          
+                            }</Typography>} 
+                        </Container>       
                     </Grid>
                 </Grid>
                 :
@@ -238,7 +244,7 @@ function InfoBoxes(){
                         <Avatar sx={{ bgcolor:"green"}}></Avatar>
 
                         <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Typography>Sırada ki kişi</Typography>
+                        <Typography>Sıradaki kişi</Typography>
                         { costumer === null ? null : <Typography sx={{ fontWeight: "700", fontSize: "1.25rem" }}>{costumer}</Typography>}
                         </Container>
                     </Grid>
@@ -267,7 +273,7 @@ function InfoBoxes(){
                 sx={{
                     margin: "1.75rem auto",
                     display: "block",
-                    fontSize: "1.2rem",
+                    fontSize: "1rem",
                     fontWeight: "bold",
                 }}
                 color="error"

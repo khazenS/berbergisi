@@ -5,6 +5,7 @@ const { encryptData } = require('../../helpers/cryptoProcess.js');
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { User } = require('../../database/schemas/userSchema.js');
 const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
+const { getIO } = require('../../helpers/socketio.js');
 
 const adminRouter = express.Router()
 
@@ -60,7 +61,7 @@ adminRouter.post('/change-status',async(req,res)=>{
             message:"shopStatus was updated"
         })        
     }
-    req.io.emit('changedStatus', !req.body.statusData)
+    getIO().emit('changedStatus', !req.body.statusData)
 
 })
 
@@ -68,7 +69,7 @@ adminRouter.post('/change-status',async(req,res)=>{
 adminRouter.post('/change-order-feature', async (req,res) => {
     const shop = await Shop.findOne({shopID:1})
     shop.orderFeature = !req.body.orderFeature
-    req.io.emit('changeOrderFeature', !req.body.orderFeature)
+    getIO().emit('changeOrderFeature', !req.body.orderFeature)
     await shop.save()
     res.json({
         newOrderFeature : !req.body.orderFeature
@@ -152,7 +153,7 @@ adminRouter.delete('/delete-user-admin-que/:userBookingID', async (req,res) => {
     latestRecord.usersBooking = latestRecord.usersBooking.filter( id => id !== userBookingID)
     await latestRecord.save()
     const currentUserBooking = await UserBooking.findOne({userBookingID:userBookingID})
-    req.io.emit('remove',{userBookingID:userBookingID,bookingToken:currentUserBooking.bookingToken})
+    getIO().emit('remove',{userBookingID:userBookingID,bookingToken:currentUserBooking.bookingToken})
     res.json({
         status:true,
         userBookingID:userBookingID
@@ -223,7 +224,7 @@ adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
     let income = service.amount
     income +=  (comingWith - 1) * shop.services[0].amount
     
-    req.io.emit('finished-cut',{userBookingID:Number(req.params.userBookingID),bookingToken:currentUserBooking.bookingToken})
+    getIO().emit('finished-cut',{userBookingID:Number(req.params.userBookingID),bookingToken:currentUserBooking.bookingToken})
     res.json({
         status:true,
         userBookingID:Number(req.params.userBookingID),
@@ -246,7 +247,7 @@ adminRouter.put('/up-move', async (req,res) => {
 
     await latestRecord.save()
 
-    req.io.emit('up-moved',currentIndex)
+    getIO().emit('up-moved',currentIndex)
     res.json({
         status:true,
         index:currentIndex
@@ -264,7 +265,7 @@ adminRouter.put('/down-move', async (req,res) => {
 
     await latestRecord.save()
 
-    req.io.emit('down-moved',currentIndex)
+    getIO().emit('down-moved',currentIndex)
     res.json({
         status:true,
         index:currentIndex
@@ -311,7 +312,7 @@ adminRouter.post('/fast-register',async (req,res) => {
         shownDate:formattedDate
     })
 
-    req.io.emit('fastUser-register',fastUserDatas)
+    getIO().emit('fastUser-register',fastUserDatas)
     res.json({
         status:true,
         fastUserDatas
@@ -370,7 +371,7 @@ adminRouter.delete('/delete-message', async (req,res) => {
     const shop = await Shop.findOne()
     shop.showMessage = null
     await shop.save()
-    req.io.emit('deleted-message')
+    getIO().emit('deleted-message')
     res.json({
         status:true
     })
@@ -382,7 +383,7 @@ adminRouter.post('/add-message' , async (req,res) => {
     const shop = await Shop.findOne()
     shop.showMessage = req.body.message
     await shop.save()
-    req.io.emit('sended-message', req.body.message)
+    getIO().emit('sended-message', req.body.message)
     res.json({
         status:true,
         message:req.body.message
@@ -526,7 +527,7 @@ adminRouter.post('/set-time', async (req,res) => {
 
     shop.costumFormattedOpeningDate = formattedDate
     await shop.save()
-    req.io.emit('set-oto-opening-time',{set:true,date:shop.costumOpeningDate})
+    getIO().emit('set-oto-opening-time',{set:true,date:shop.costumOpeningDate})
     res.json({
         status:true,
         formattedDate,
@@ -542,7 +543,7 @@ adminRouter.delete('/cancel-costum-open', async (req,res) => {
 
     await shop.save()
 
-    req.io.emit('set-oto-opening-time',{set:false,date:null})
+    getIO().emit('set-oto-opening-time',{set:false,date:null})
     res.json({
         status:true
     })

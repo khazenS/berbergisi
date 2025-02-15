@@ -4,7 +4,8 @@ import axios from "axios"
 const initialState = {
     isLoading : false,
     error : false,
-    message : null
+    message : null,
+    totalReqError:false
 }
 
 export const getMessage = createAsyncThunk('getMessage', async () => {
@@ -18,6 +19,9 @@ export const showMessageSlice = createSlice({
     reducers: {
         updateMessage : (state,action) => {
             state.message = action.payload
+        },
+        messageResetTRE: (state,action) => {
+            state.totalReqError = false
         }
     },
     extraReducers : (builder) => {
@@ -26,8 +30,12 @@ export const showMessageSlice = createSlice({
             state.error = false
         })
         builder.addCase(getMessage.fulfilled , (state,action) => {
-            state.message = action.payload.message
-            state.isLoading = false
+            if(action.payload.request_error && action.payload.reqErrorType == 'total'){
+                state.totalReqError = true
+            }else{
+                state.message = action.payload.message
+                state.isLoading = false                
+            }
         })
         builder.addCase(getMessage.rejected , (state) => {
             state.error = true
@@ -36,5 +44,5 @@ export const showMessageSlice = createSlice({
     }
 })
 
-export const {updateMessage} = showMessageSlice.actions
+export const {updateMessage,messageResetTRE} = showMessageSlice.actions
 export default showMessageSlice.reducer

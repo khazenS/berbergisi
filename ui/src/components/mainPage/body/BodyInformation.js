@@ -11,7 +11,7 @@ function BodyInformation(){
 
     const message = useSelector( state => state.showMessage.message)
     useEffect( () => {
-        dispatch(getMessage())
+      dispatch(getMessage())
     },[dispatch])
 
     // new message socket
@@ -23,7 +23,7 @@ function BodyInformation(){
         return () => {
             socket.off('sended-message')
         }
-    },[])
+    },[socket])
     // delete socket
     useEffect( () => {
         socket.on('deleted-message', () => {
