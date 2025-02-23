@@ -1,6 +1,6 @@
 import AdminPage from "./pages/AdminPage";
 import MainPage from "./pages/MainPage";
-import { BrowserRouter, Routes, Route, HashRouter } from "react-router-dom";
+import { Routes, Route, HashRouter } from "react-router-dom";
 import NoPage from "./pages/NoPage";
 import AdminEntryPage from "./pages/AdminEntryPage.js";
 

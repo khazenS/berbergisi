@@ -69,6 +69,9 @@ export const dailyBookingSlice = createSlice({
         },
         dailyResetTRE: (state,action) => {
             state.totalReqError = false
+        },
+        updateShopStatus: (state,action) => {
+            state.shopStatus = action.payload
         }
     },
     extraReducers: (builder) => {
@@ -114,5 +117,5 @@ export const dailyBookingSlice = createSlice({
     }
 })
 
-export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove,changeOrderF,updateOtoDate,dailyResetTRE} = dailyBookingSlice.actions
+export const {newUserToQue,resetDailyQueue,removeUserFromQue,upMove,downMove,changeOrderF,updateOtoDate,dailyResetTRE,updateShopStatus} = dailyBookingSlice.actions
 export default dailyBookingSlice.reducer

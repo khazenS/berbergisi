@@ -4,12 +4,13 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import TextField from '@mui/material/TextField';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
-import { adminLogin, resetAdminDatas, resetExpiredError, updatePassword, updateUsername } from '../redux/features/adminPageSlices/adminLoginSlice';
+import { adminLogin, resetAdminDatas, resetExpiredError, resetTotalReqError, updatePassword, updateUsername } from '../redux/features/adminPageSlices/adminLoginSlice';
 import { useNavigate } from 'react-router-dom';
 import { resetShopStatusExpiredError } from '../redux/features/adminPageSlices/shopStatusSlice';
 import { resetCancelExpiredError } from '../redux/features/adminPageSlices/adminDailyBookingSlice';
 import { resetFastOpsExpiredError } from '../redux/features/adminPageSlices/fastOpsSlice';
 import { resetShopSettingsExpiredError } from '../redux/features/adminPageSlices/shopSettingsSlice';
+import { resetNotificationExpiredError } from '../redux/features/adminPageSlices/notificationSlice';
 function AdminEntryPage(){
     const dispatch = useDispatch()
     const adminDatas = useSelector( state => state.adminLogin.adminDatas)
@@ -22,6 +23,9 @@ function AdminEntryPage(){
     const bookingExpired = useSelector( state => state.adminBooking.expiredError)
     const fastOpsExpired = useSelector( state => state.fastOps.expiredError)
     const shopSettingsExpired = useSelector( state => state.shopSettings.expiredError)
+    const notificationExpired = useSelector( state => state.notification.expiredError)
+    const totalReqError = useSelector( state => state.adminLogin.totalReqError)
+
     // When login was succesfully navigate admin panel
     useEffect( () => {
         if(isLogin === true){
@@ -37,8 +41,28 @@ function AdminEntryPage(){
         dispatch(resetCancelExpiredError())
         dispatch(resetFastOpsExpiredError())
         dispatch(resetShopSettingsExpiredError())
+        dispatch(resetNotificationExpiredError())
     },[dispatch,adminExpired,shopExpired,bookingExpired,fastOpsExpired,shopSettingsExpired])
+
+    // Reset total request error after 3 sec
+    useEffect( () => {
+        if(totalReqError ===true){
+            setTimeout( () => {
+                dispatch(resetTotalReqError())
+            },3000)
+        }
+    },[dispatch,totalReqError])
+
     return (
+        <div>
+        {
+            totalReqError === true ? 
+            <div style={{zIndex:'999',position:'fixed',marginTop:5,top:'20px',left:'10px',right:'20px'}}>
+            <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> Sunucuya çok fazla istek attınız.Lütfen daha sonra tekrar deneyiniz. </Alert>
+            </div>
+            :
+            <></>
+        }
         <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh' }}>
             <Paper elevation={24} sx={{ height: '50vh', width: '40vh',display:'flex' }}>
                     <Container sx={{display:'flex'}}>
@@ -64,6 +88,7 @@ function AdminEntryPage(){
                     </Container>
             </Paper>            
         </Box>
+        </div>
     );
 }
 

@@ -8,6 +8,7 @@ import fastOpsSlice from './features/adminPageSlices/fastOpsSlice.js'
 import shopSettingsSlice from './features/adminPageSlices/shopSettingsSlice.js'
 import showMessageSlice from './features/mainPageSlices/showMessageSlice.js'
 import shopStatsSlice from './features/adminPageSlices/shopStatsSlice.js'
+import notificationSlice from './features/adminPageSlices/notificationSlice.js'
 export default configureStore({
   reducer: {
     register: registerReducer,
@@ -18,6 +19,7 @@ export default configureStore({
     fastOps : fastOpsSlice,
     shopSettings: shopSettingsSlice,
     showMessage : showMessageSlice,
-    shopStats:shopStatsSlice
+    shopStats:shopStatsSlice,
+    notification:notificationSlice
   },
 })

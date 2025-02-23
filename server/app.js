@@ -8,7 +8,6 @@ const cors = require('cors');
 const { createServer } = require('http');
 const { cryptoMiddleware } = require('./middleware/cryptoMiddleware.js');
 const { initializeSocket } = require('./helpers/socketio.js');
-const { requestLimiter } = require('./middleware/requestLimiter.js');
 
 // Load environment variables
 dotenv.config();
@@ -33,7 +32,7 @@ app.use(cors());
 
 // JSON body parsing middleware
 app.use(express.json());
-
+ 
 // Crypto Middleware
 app.use(cryptoMiddleware);
 
@@ -48,5 +47,5 @@ dbConnection();
 
 // Start the server
 server.listen(process.env.PORT, '0.0.0.0', () => {
-  console.log('Uygulama şu anda ', process.env.PORT, ' portunda çalisiyor');
+  console.log('The app is working on that port: ', process.env.PORT);
 });

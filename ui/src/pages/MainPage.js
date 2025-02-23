@@ -2,7 +2,7 @@ import Container from '@mui/material/Container'
 import Header from '../components/mainPage/Header.js';
 import Body from '../components/mainPage/body/Body.js';
 import BodyInformation from '../components/mainPage/body/BodyInformation.js';
-import { Alert } from '@mui/material';
+import { Alert, Button } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { resetReqError } from '../redux/features/mainPageSlices/registerSlice.js';
@@ -13,10 +13,10 @@ function MainPage(){
     const dispatch = useDispatch()
     const registerReqError = useSelector(state => state.register.registerReqError)
 
-    const [totalReqError,setTotalError] = useState(false)
     const dailyBookingTotalError = useSelector(state => state.booking.totalReqError)
     const registerTotalError = useSelector( state => state.register.totalReqError)
     const messageTotalError = useSelector(state=> state.showMessage.totalReqError)
+
     useEffect( () => {
         if(registerReqError === true){
             setTimeout(() => {
@@ -46,13 +46,12 @@ function MainPage(){
                 <></>
             }
             {
-                totalReqError === true ? 
+                dailyBookingTotalError === true || registerTotalError === true || messageTotalError === true ? 
                 <div style={{zIndex:'999',position:'fixed',marginTop:5,top:'20px',left:'10px',right:'20px'}}>
                     <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> Sunucuya çok fazla istek attınız.Lütfen daha sonra tekrar deneyiniz. </Alert>
                 </div> : 
                 <></>
             }
-            
             <Header></Header>
             <BodyInformation></BodyInformation>
             <Body></Body>

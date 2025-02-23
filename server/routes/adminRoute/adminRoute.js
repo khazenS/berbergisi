@@ -6,12 +6,15 @@ const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { User } = require('../../database/schemas/userSchema.js');
 const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js');
 const { getIO } = require('../../helpers/socketio.js');
-
+const { Admin } = require('../../database/schemas/adminSchema.js');
+const { RequestCounter } = require('../../database/schemas/requestCounterSchema.js');
 const adminRouter = express.Router()
 
 // Changin status for shop opening or closing
 adminRouter.post('/change-status',async(req,res)=>{
     const shop = await Shop.findOne({shopID:1})
+    await RequestCounter.deleteMany({})
+    
     shop.shopStatus = !req.body.statusData
     await shop.save()
 
@@ -577,5 +580,13 @@ adminRouter.post('/delete-service', async (req,res) => {
     })
 })
 
+adminRouter.post('/update-fcm-token', async (req,res) => {
+    const adminDoc = await Admin.findOne({})
+    adminDoc.fcm_token = req.body.fcm_token
+    await adminDoc.save()
+    res.json({
+        status:true
+    })
+})
 
 module.exports = adminRouter;

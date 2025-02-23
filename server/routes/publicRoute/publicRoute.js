@@ -8,13 +8,13 @@ const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js')
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
 const { getIO } = require('../../helpers/socketio.js');
-const { registerRequestLimiter } = require('../../middleware/requestLimiter.js');
-
+const { registerRequestLimiter, requestLimiter } = require('../../middleware/requestLimiter.js');
+const admin = require('../../helpers/firebaseAdmin.js')
 const publicRouter = express.Router()
 
 
 //Learn the shop open or close
-publicRouter.get('/getShopStatus',async (req,res)=>{
+publicRouter.get('/getShopStatus', requestLimiter ,async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
 
     const now = new Date()
@@ -64,6 +64,7 @@ publicRouter.get('/getShopStatus',async (req,res)=>{
 
 publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
+    const adminDoc = await Admin.findOne({})
     // date 
     const now = new Date();
     const offset = now.getTimezoneOffset()
@@ -126,6 +127,21 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
             shownDate:formattedDate
         }
     )
+    // This part for sending notification to admin
+    const message = {
+        notification: {
+            title: "Berber Gısi",
+            body: `${req.body.data.name} isimli müşteri sıraya girdi.`
+        },
+        token: adminDoc.fcm_token
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+    } catch (error) {
+        console.error("There is an notification error: ", error);
+    }
+
     getIO().emit('newUser',cryptedData)
     res.json({
         status:true,
@@ -134,7 +150,7 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
 })
 
 // If exists get daily booking or create new one
-publicRouter.get('/get-dailyBooking', async (req,res) => {
+publicRouter.get('/get-dailyBooking',requestLimiter, async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
     const shop = await Shop.findOne()
     const responseArray = []
@@ -181,7 +197,7 @@ publicRouter.get('/get-dailyBooking', async (req,res) => {
 })
 
 // Check the que token when page uploaded
-publicRouter.post('/check-queue-token', async (req,res) => {
+publicRouter.post('/check-queue-token', requestLimiter , async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
     if(tokenBody !== false){
         res.json({
@@ -198,7 +214,7 @@ publicRouter.post('/check-queue-token', async (req,res) => {
 })
 
 // Controlling queueToken for cancel the order and then cancel
-publicRouter.post('/cancel-queue', async (req,res) => {
+publicRouter.post('/cancel-queue', requestLimiter , async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
     if(tokenBody !== false){
         
@@ -228,7 +244,7 @@ publicRouter.post('/cancel-queue', async (req,res) => {
 
 
 //Create a admin access token and send to ui 
-publicRouter.post('/admin-login', async (req,res) => {
+publicRouter.post('/admin-login', requestLimiter , async (req,res) => {
     const admin = await Admin.findOne()
     if(admin.username === req.body.username && admin.password === req.body.password){
         const adminAccessToken = getTokenforAdmin()
@@ -249,7 +265,7 @@ publicRouter.post('/admin-login', async (req,res) => {
 })
 
 // getting message for announcment
-publicRouter.get('/get-message', async (req,res) => {
+publicRouter.get('/get-message', requestLimiter , async (req,res) => {
     const shop = await Shop.findOne()
     const message = shop.showMessage
     res.json({

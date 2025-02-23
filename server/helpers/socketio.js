@@ -18,7 +18,7 @@ const initializeSocket = (server) => {
             console.log("Socket Disconnection.")
         });
     });
-    console.warn("socketio was initilized!");
+    console.warn("Socketio was initilized!");
     return io;
 };
 

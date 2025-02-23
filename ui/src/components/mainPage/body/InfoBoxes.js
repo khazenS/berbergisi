@@ -64,12 +64,11 @@ function InfoBoxes(){
     // queue token processes
     useEffect( () => {
         const token = localStorage.getItem('queueToken')
-        if(token){
+        if(token && !queueToken.token){
         dispatch(checkQueueToken(token))
         }
     },[dispatch])
-
-
+    
     //Functions for model process
     const handleOpen = () => setOpen(true);
     const handleClose = () => {

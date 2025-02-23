@@ -78,7 +78,6 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
-            console.log(action.payload)
             if(action.payload.status == false && action.payload.req_error == 'register') state.registerReqError = true
             else{
                 state.values.serviceID = null

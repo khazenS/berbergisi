@@ -10,10 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import Clock from '../mainPage/Clock.js';
 import StoreIcon from '@mui/icons-material/Store';
 
+
 export default function AdminFirstPart(){
     const dispatch = useDispatch()
     const shopStatusState = useSelector(state => state.shopStatus)
-    
     const navigate = useNavigate()
 
     // defining the first value of shopStatusState.status

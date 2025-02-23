@@ -10,8 +10,8 @@ let initialState = {
     error : false,
     isLogin:false,
     expiredError:false,
-    wrongInputs:false
-
+    wrongInputs:false,
+    totalReqError:false
 }
 
 //Admin Login request to server
@@ -48,6 +48,9 @@ export const adminLoginSlice = createSlice({
         },
         resetExpiredError : (state) => {
             state.expiredError = false
+        },
+        resetTotalReqError : (state) => {
+            state.totalReqError = false
         }
     },
     extraReducers : (builder) => {
@@ -57,11 +60,14 @@ export const adminLoginSlice = createSlice({
             state.error = false
         })
         builder.addCase(adminLogin.fulfilled, (state,action) => {
-            if(action.payload.status === true){
-                localStorage.setItem('adminAccessToken',action.payload.adminAccessToken)
-                state.isLogin = true
-            }else{
-                state.wrongInputs = true
+            if(action.payload.request_error == true) state.totalReqError = true
+            else{
+                if(action.payload.status === true){
+                    localStorage.setItem('adminAccessToken',action.payload.adminAccessToken)
+                    state.isLogin = true
+                }else{
+                    state.wrongInputs = true
+                }                
             }
         })
         builder.addCase(adminLogin.rejected,(state) => {
@@ -87,5 +93,5 @@ export const adminLoginSlice = createSlice({
     }
 })
 
-export const {updatePassword,updateUsername,resetExpiredError,resetAdminDatas} = adminLoginSlice.actions
+export const {updatePassword,updateUsername,resetExpiredError,resetAdminDatas,resetTotalReqError} = adminLoginSlice.actions
 export default adminLoginSlice.reducer

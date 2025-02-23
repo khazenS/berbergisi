@@ -6,8 +6,6 @@ const initialState = {
     isLoading : false,
     error : false,
     stats : null,
-
-    
 }
 
 export const getStats = createAsyncThunk('getStats',async () => {
@@ -64,8 +62,10 @@ export const shopStatsSlice = createSlice({
             state.error = false
         })
         builder.addCase(getStats.fulfilled, (state,action) => {
-            const decryptedData = decryptData(action.payload.stats)
-            state.stats = decryptedData
+            if(action.payload.status === true){
+                const decryptedData = decryptData(action.payload.stats)
+                state.stats = decryptedData                
+            }
             state.isLoading = false
         })
         builder.addCase(getStats.rejected, (state) => {

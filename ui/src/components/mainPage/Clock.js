@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Typography, Card, CardContent, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import { DateTime } from "luxon";
 
 export default function Clock(){

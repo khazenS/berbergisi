@@ -17,15 +17,12 @@ const requestLimiter = async (req,res,next) => {
             requestCounter = await RequestCounter.findOne({userKey : key })
         }
     }else{
-
-        
-        if((requestCounter.existDate.getTime()) + ( 6 * 60 * 60 * 1000) < localCurrentTime){
+        if((requestCounter.existDate.getTime()) + ( process.env.REQUEST_LIMIT_RESET_TIME * 60 * 60 * 1000) < localCurrentTime){
             requestCounter.existDate = new Date(Date.now() + 3 * 60 * 60 * 1000);
             requestCounter.requestCount.registerRequest = 0;
             requestCounter.requestCount.totalRequest = 0;
         }
-        if(requestCounter.requestCount.totalRequest >= 60){
-            console.log(3)
+        if(requestCounter.requestCount.totalRequest >= process.env.TOTAL_REQUEST_LIMIT){
             return res.json({
                 request_error:true,
                 reqErrorType:'total',
@@ -33,7 +30,6 @@ const requestLimiter = async (req,res,next) => {
             })
         }
     }
-    if(req.path == '/register-user') requestCounter.requestCount.registerRequest += 1
     requestCounter.requestCount.totalRequest += 1
     await requestCounter.save()
     next()
@@ -50,13 +46,12 @@ const registerRequestLimiter = async (req,res,next) => {
     let requestDoc = await RequestCounter.findOne({userKey : key})
     if(!requestDoc) requestDoc = await RequestCounter.create({userKey : key})
     else{
-        if((requestDoc.existDate.getTime()) + ( 6 * 60 * 60 * 1000) < localCurrentTime){
+        if((requestDoc.existDate.getTime()) + ( process.env.REQUEST_LIMIT_RESET_TIME * 60 * 60 * 1000) < localCurrentTime){
             requestDoc.existDate = new Date(Date.now() + 3 * 60 * 60 * 1000);
             requestDoc.requestCount.registerRequest = 0;
             requestDoc.requestCount.totalRequest = 0;
         }
-        if(requestDoc.requestCount.registerRequest >= 2){
-            console.log('here')
+        if(requestDoc.requestCount.registerRequest >= process.env.REGISTER_REQUEST_LIMIT){
             return res.json({
                 status:false,
                 req_error:'register',

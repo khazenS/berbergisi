@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
@@ -6,7 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import {socket} from "../../../helpers/socketio.js";
 import CloseShop from "./CloseShop.js";
-import { changeOrderF,  getBooking, getShopStatus, resetDailyQueue, updateOtoDate } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
+import { changeOrderF,  getBooking, getShopStatus, resetDailyQueue, updateOtoDate, updateShopStatus } from "../../../redux/features/mainPageSlices/dailyBookingSlice.js";
 import { resetQueueToken } from "../../../redux/features/mainPageSlices/registerSlice.js";
 import InfoBoxes from "./InfoBoxes.js";
 import LineTable from "./LineTable.js";
@@ -17,7 +17,6 @@ function Body() {
   const [changedStatus,setStatus] = useState(null)
 
   const dailyBookingState = useSelector(state => state.booking)
-  
   //Request database to learn status value and then set value to changedStatus state
   useEffect(() => {
     dispatch(getShopStatus())
@@ -71,7 +70,7 @@ function Body() {
   // oto opening socket
   useEffect(()=>{
     socket.on('oto-status-change',(datas) => {
-      setStatus(datas.status)
+      dispatch(updateShopStatus(datas.status))
     })
 
     return () => {
@@ -79,9 +78,7 @@ function Body() {
     }
   },[])
 
-
-
-  if (dailyBookingState.isLoading === true || changedStatus === null ) {
+  if(dailyBookingState.isLoading === true){
     return (
       <Box
         sx={{
@@ -93,37 +90,38 @@ function Body() {
       >
         <CircularProgress />
       </Box>
-    );
-  } else if (dailyBookingState.error) {
-    return (
-      <div>
-        <Stack
-          sx={{
-            height: "50vh",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Alert variant="filled" severity="error">
-            Yüklenirken bir hata oluştu lütfen sayfayı yenileyiniz.
-          </Alert>
-        </Stack>
-      </div>
-    );    
+    )
   }
-  else {
+
+  if(dailyBookingState.error){
     return (
-      <div>
-        {changedStatus ? (
-          <>
-            <InfoBoxes></InfoBoxes>
-            <LineTable></LineTable>    
-          </>
-        ) : (
-          <CloseShop></CloseShop>
-        )}
-      </div>
-    );
+      <Stack
+        sx={{
+          height: "50vh",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Alert variant="filled" severity="error">
+          Yüklenirken bir hata oluştu lütfen sayfayı yenileyiniz.
+        </Alert>
+      </Stack>
+    )
+  }
+
+  if(changedStatus === true){
+    return(
+      <>
+        <InfoBoxes />
+        <LineTable />
+      </>      
+    )
+  }
+  
+  if(changedStatus === false){
+    return (
+      <CloseShop />
+    )
   }
 }
 
