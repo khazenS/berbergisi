@@ -7,7 +7,7 @@ import store from "./redux/store.js"
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/firebase-messaging-sw.js")
+  navigator.serviceWorker.register("/service-worker.js")
     .then(reg => console.log("Service Worker was registered: ", reg.scope))
     .catch(err => console.error("Service Worker registiration error: ", err));
 }

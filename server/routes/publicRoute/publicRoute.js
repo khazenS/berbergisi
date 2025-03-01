@@ -9,9 +9,8 @@ const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
 const { getIO } = require('../../helpers/socketio.js');
 const { registerRequestLimiter, requestLimiter } = require('../../middleware/requestLimiter.js');
-const admin = require('../../helpers/firebaseAdmin.js')
+const webpush = require('web-push');
 const publicRouter = express.Router()
-
 
 //Learn the shop open or close
 publicRouter.get('/getShopStatus', requestLimiter ,async (req,res)=>{
@@ -128,18 +127,15 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
         }
     )
     // This part for sending notification to admin
-    const message = {
-        notification: {
-            title: "Berber Gısi",
-            body: `${req.body.data.name} isimli müşteri sıraya girdi.`
-        },
-        token: adminDoc.fcm_token
-    };
+    const messagePayload = JSON.stringify({
+        title: 'Berber Gısi Sıra Güncellemesi',
+        body: `${req.body.data.name} isimli müşteri sıraya girdi.`
+    })
 
-    try {
-        const response = await admin.messaging().send(message);
-    } catch (error) {
-        console.error("There is an notification error: ", error);
+    try{
+        await webpush.sendNotification(adminDoc.subscription, messagePayload)
+    }catch(err){
+        console.error("There is an notification error.")
     }
 
     getIO().emit('newUser',cryptedData)
@@ -216,14 +212,26 @@ publicRouter.post('/check-queue-token', requestLimiter , async (req,res) => {
 // Controlling queueToken for cancel the order and then cancel
 publicRouter.post('/cancel-queue', requestLimiter , async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
+    const adminDoc = await Admin.findOne({})
     if(tokenBody !== false){
         
         const userBooking = await UserBooking.findOne({userBookingID:tokenBody.userBookingID})
         const dayBooking = await DayBooking.findOne({dayBookingID:tokenBody.dayBookingID})
         if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
+            const user = await User.findOne({userID:userBooking.userID})
             dayBooking.usersBooking = dayBooking.usersBooking.filter( userBookingID => userBookingID !== userBooking.userBookingID)
             await dayBooking.save()
             getIO().emit('cancel', userBooking.userBookingID)
+            // This part for sending notification to admin
+            const messagePayload = JSON.stringify({
+                title: 'Berber Gısi Sıra Güncellemesi',
+                body: `${user.name} isimli müşteri sırasını iptal etti.`
+            })
+            try{
+                await webpush.sendNotification(adminDoc.subscription, messagePayload)
+            }catch(err){
+                console.error("There is an notification error.")
+            }   
             res.json({
                 status:true,
                 userBookingID:userBooking.userBookingID

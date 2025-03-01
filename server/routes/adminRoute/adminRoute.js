@@ -8,6 +8,7 @@ const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js')
 const { getIO } = require('../../helpers/socketio.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
 const { RequestCounter } = require('../../database/schemas/requestCounterSchema.js');
+const webpush = require('web-push');
 const adminRouter = express.Router()
 
 // Changin status for shop opening or closing
@@ -580,13 +581,27 @@ adminRouter.post('/delete-service', async (req,res) => {
     })
 })
 
-adminRouter.post('/update-fcm-token', async (req,res) => {
-    const adminDoc = await Admin.findOne({})
-    adminDoc.fcm_token = req.body.fcm_token
-    await adminDoc.save()
-    res.json({
-        status:true
-    })
+// Subscribe admin user for notification
+adminRouter.post('/subscribe-notification', async (req,res) => {
+    await Admin.updateOne({shopID:1},{ $set : {subscription : req.body.subscription}})
+    res.json({status:true,message:'Subscription was success!'})
 })
+
+// Costum message send
+adminRouter.post('/send-costum-notification', async (req,res) => {
+    const adminDoc = await Admin.findOne({})
+    const payload = JSON.stringify({
+        title: req.body.title,
+        body: req.body.body,
+    })
+    try{
+        webpush.sendNotification(adminDoc.subscription, payload)
+    }catch(err){
+        console.err('There is an notification err: ',err)
+    }
+    res.json({
+        message:'Notification was send!'
+    })
+} )
 
 module.exports = adminRouter;

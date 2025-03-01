@@ -8,7 +8,7 @@ const cors = require('cors');
 const { createServer } = require('http');
 const { cryptoMiddleware } = require('./middleware/cryptoMiddleware.js');
 const { initializeSocket } = require('./helpers/socketio.js');
-
+const webpush = require('web-push');
 // Load environment variables
 dotenv.config();
 
@@ -35,6 +35,13 @@ app.use(express.json());
  
 // Crypto Middleware
 app.use(cryptoMiddleware);
+
+// Web Push Configs
+webpush.setVapidDetails(
+  'mailto:yourMail@gmail.com',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+)
 
 // PUBLIC API
 app.use("/api/public",publicRouter);

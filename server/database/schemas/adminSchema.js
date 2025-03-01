@@ -4,8 +4,8 @@ const adminSchema = new mongoose.Schema({
     username:String,
     password:String,
     adminAccessToken:String,
-    fcm_token:{
-        type:String,
+    subscription:{
+        type:Object,
         default:null
     }
 })

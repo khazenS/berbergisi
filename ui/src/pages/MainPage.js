@@ -2,9 +2,9 @@ import Container from '@mui/material/Container'
 import Header from '../components/mainPage/Header.js';
 import Body from '../components/mainPage/body/Body.js';
 import BodyInformation from '../components/mainPage/body/BodyInformation.js';
-import { Alert, Button } from '@mui/material';
+import { Alert } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { resetReqError } from '../redux/features/mainPageSlices/registerSlice.js';
 import { dailyResetTRE } from '../redux/features/mainPageSlices/dailyBookingSlice.js';
 import { resgisterResetTRE } from '../redux/features/mainPageSlices/registerSlice.js';
