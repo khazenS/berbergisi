@@ -38,7 +38,7 @@ app.use(cryptoMiddleware);
 
 // Web Push Configs
 webpush.setVapidDetails(
-  'mailto:yourMail@gmail.com',
+  'mailto:yourmail@gmail.com',
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 )

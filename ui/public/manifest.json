@@ -1,0 +1,14 @@
+{
+    "name": "Berber Gısi",
+    "short_name": "Berber Gısi",
+    "display": "standalone",
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "icons": [
+        {
+            "src": "/gisiLogo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -583,7 +583,7 @@ adminRouter.post('/delete-service', async (req,res) => {
 
 // Subscribe admin user for notification
 adminRouter.post('/subscribe-notification', async (req,res) => {
-    await Admin.updateOne({shopID:1},{ $set : {subscription : req.body.subscription}})
+    await Admin.updateOne({},{ $set : {subscription : req.body.subscription}})
     res.json({status:true,message:'Subscription was success!'})
 })
 

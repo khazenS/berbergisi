@@ -128,7 +128,7 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     )
     // This part for sending notification to admin
     const messagePayload = JSON.stringify({
-        title: 'Berber Gısi Sıra Güncellemesi',
+        title: 'Sıra Güncellemesi',
         body: `${req.body.data.name} isimli müşteri sıraya girdi.`
     })
 
@@ -224,7 +224,7 @@ publicRouter.post('/cancel-queue', requestLimiter , async (req,res) => {
             getIO().emit('cancel', userBooking.userBookingID)
             // This part for sending notification to admin
             const messagePayload = JSON.stringify({
-                title: 'Berber Gısi Sıra Güncellemesi',
+                title: 'Sıra Güncellemesi',
                 body: `${user.name} isimli müşteri sırasını iptal etti.`
             })
             try{
