@@ -11,8 +11,7 @@ import ShopSettings from "../components/adminPage/ShopSettings.js";
 import ShopStats from "../components/adminPage/ShopStats.js";
 import { updateStatus } from "../redux/features/adminPageSlices/shopStatusSlice.js";
 import { socket } from "../helpers/socketio.js";
-import Notification from "../components/adminPage/Notification.js";
-
+import Notification from "../components/adminPage/Notification.js"
 
 function AdminPage() {
     const dispatch = useDispatch();

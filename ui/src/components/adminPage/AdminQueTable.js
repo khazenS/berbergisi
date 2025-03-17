@@ -30,7 +30,7 @@ function Row(props){
         dispatch(cutFinished(userBookingID))
         .then((result) => {
             // This is for uupdating shop stats
-            dispatch((newFinishedCut({income:result.payload.finishedDatas.income,serviceName:result.payload.finishedDatas.serviceName,comingWith:result.payload.finishedDatas.comingWith})))
+            dispatch((newFinishedCut({income:result.payload.finishedDatas.income,serviceName:result.payload.finishedDatas.serviceName,comingWith:result.payload.finishedDatas.comingWith,serviceIncome:result.payload.finishedDatas.serviceIncome})))
         })
         setOpen(false)
     }

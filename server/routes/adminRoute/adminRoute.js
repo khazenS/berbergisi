@@ -236,7 +236,8 @@ adminRouter.put('/finish-cut/:userBookingID', async (req,res) => {
         finishedDatas:{
             serviceName:service.name,
             income,
-            comingWith:comingWith
+            comingWith:comingWith,
+            serviceIncome:service.amount
         }
     })
 })
@@ -394,122 +395,6 @@ adminRouter.post('/add-message' , async (req,res) => {
     })
 })
 
-// get all stats
-adminRouter.get('/get-stats', async (req,res) => {
-    // date 
-    const now = new Date()
-    const offset = now.getTimezoneOffset()
-    
-    const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
-    const aWeekAgoDate = new Date(localNowDate.getTime() - (  7 * 24 * 60 * 60 * 1000))
-    const lastYearDate = new Date();
-    lastYearDate.setFullYear(localNowDate.getFullYear() - 1);
-
-    let latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1}) 
-    // This if for creating new monthRecord when you set up the app first time
-    if(!latestDailyRecord) {
-        latestDailyRecord = await new DayBooking({
-            existDayDate:localNowDate
-        }).save()
-    }
-    const weeklyRecords = await DayBooking.find({
-        existDayDate:{
-            $gte: aWeekAgoDate,
-            $lt:localNowDate 
-        }
-    })
-
-    let latestMonthRecord = await MonthBooking.findOne().sort({existMonthDate : -1})
-    // This if for creating new monthRecord when you set up the app first time
-    if(!latestMonthRecord) {
-        const monthDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1))
-        latestMonthRecord = await new MonthBooking({
-            existMonthDate:monthDate
-        }).save()
-    }
-    const yearlyRecords = await MonthBooking.find({
-        existMonthDate:{
-            $gte: lastYearDate,
-            $lt:localNowDate
-        }
-    })
-
-    const shop = await Shop.findOne()
-
-    let dailyCounts = []
-    let dailyIncome = 0
-        shop.services.forEach( service => {
-        const dailyService = latestDailyRecord.dailyCount.find( dailyCountService => dailyCountService.serviceID === service.serviceID)
-        if (dailyService == undefined){
-            dailyCounts.push({
-                name:service.name,
-                count:0
-            })
-        }else{
-            dailyCounts.push({
-                name:service.name,
-                count:dailyService.count
-            })
-            dailyIncome += service.amount * dailyService.count
-        }
-    })
-    let weeklyCounts = []
-    let weeklyIncome = 0
-
-    shop.services.forEach( service => {
-        weeklyCounts.push({
-            serviceID:service.serviceID,
-            name:service.name,
-            count:0
-        })
-    })
-
-    weeklyRecords.forEach( dayRecord => {
-        dayRecord.dailyCount.forEach( dayService => {
-            const existService = weeklyCounts.find( weeklyService => weeklyService.serviceID == dayService.serviceID)
-            if(existService) existService.count += dayService.count
-        })
-        weeklyIncome += dayRecord.dailyPaid
-    })
-
-    //let montlyCount = []
-/*     shop.services.find(service => {
-        const monthService = latestMonthRecord.monthlyCount.find( monthCountService => monthCountService.serviceID == service.serviceID)
-        if(monthService == undefined){
-            montlyCount.push({
-                name:service.name,
-                count:0
-            })
-        }else{
-            montlyCount.push({
-                name:service.name,
-                count:monthService.count
-            })
-            monthlyIncome += monthService.count * service.amount
-        }
-    }) */
-
-    let yearlyIncome = 0
-    yearlyRecords.forEach(month => {
-        yearlyIncome += month.monthlyPaid
-    })
-
-    res.json({
-        status:true,
-        stats:encryptData({
-            daily:{
-                dailyCounts,
-                dailyIncome:latestDailyRecord.dailyPaid
-            },
-            weekly:{
-                weeklyCounts,
-                weeklyIncome:weeklyIncome
-            },
-            monthlyIncome:latestMonthRecord.monthlyPaid,
-            yearlyIncome
-        })
-    })
-})
 
 // Setting time fir costum opening  shop
 adminRouter.post('/set-time', async (req,res) => {
@@ -604,4 +489,94 @@ adminRouter.post('/send-costum-notification', async (req,res) => {
     })
 } )
 
+// Daily Stats
+adminRouter.get('/get-daily-stats', async (req,res) => {
+    let latestDailyRecord = await DayBooking.findOne().sort({existDayDate : -1})
+    // Create if there is no day booking
+    if(!latestDailyRecord) {
+        latestDailyRecord = await new DayBooking({
+            existDayDate:localNowDate
+        }).save()
+    }
+
+    const shop = await Shop.findOne()
+
+    let dailyCounts = []
+    let dailyIncome = 0
+    shop.services.forEach( service => {
+        const dailyService = latestDailyRecord.dailyCount.find( dailyCountService => dailyCountService.serviceID === service.serviceID)
+        dailyCounts.push({
+            name:service.name,
+            count: dailyService == undefined ? 0 : dailyService.count,
+            color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+            income: dailyService == undefined ? 0 : service.amount * dailyService.count
+        })
+        dailyIncome += dailyService == undefined ? 0 : service.amount * dailyService.count
+    })
+
+    res.json({
+        status:true,
+        dailyIncome,
+        dailyCounts
+    })
+})
+
+adminRouter.get('/get-weekly-stats', async (req,res) => {
+    const now = new Date()
+    const offset = now.getTimezoneOffset()
+    
+    const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const today = localNowDate.getDay() === 0 ? 6 : localNowDate.getDay() - 1
+    const beginingWeek = new Date(localNowDate.getTime() - (today * 24 * 60 * 60 * 1000)).setHours(0,0,0,0)
+    const weekDays = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
+    
+    const weeklyRecords = await DayBooking.find({
+        existDayDate:{
+            $gte: beginingWeek,
+            $lt:localNowDate 
+        }
+    })
+    let totalIncome = 0
+    let weeklyCounts = []
+    for(day = 0; day <= today;day++){
+        const todayRecord = weeklyRecords.find( record => record.existDayDate.getDate() === new Date(localNowDate - (today - day) * 24 * 60 * 60 * 1000).getDate())
+        weeklyCounts.push({
+            name:weekDays[day],
+            income:todayRecord.dailyPaid
+        })
+        totalIncome += todayRecord.dailyPaid
+    }
+    res.json({
+        status:true,
+        weeklyCounts,
+        totalIncome
+    })
+})
+
+
+adminRouter.get('/get-monthly-stats', async (req,res) => {
+    const now = new Date()
+    const offset = now.getTimezoneOffset()
+    
+    const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
+    const yearDocument = await MonthBooking.find({
+        $expr: {
+            $eq : [{ $year : "$existMonthDate"}, localNowDate.getFullYear()]
+        }
+    })
+
+    let yearIncome = 0
+    let monthIncome = 0
+    yearDocument.forEach( month => {
+        yearIncome += month.monthlyPaid
+        if(month.existMonthDate.getMonth() === localNowDate.getMonth()){
+            monthIncome = month.monthlyPaid
+        }
+    })
+    const counts = [{name:'Bu Ay',income:monthIncome},{name:'Bu Yıl',income:yearIncome}]
+    res.json({
+        status:true,
+        counts
+    })
+})
 module.exports = adminRouter;

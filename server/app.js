@@ -11,8 +11,6 @@ const { initializeSocket } = require('./helpers/socketio.js');
 const webpush = require('web-push');
 // Load environment variables
 dotenv.config();
-
-
 // Express app setup
 const app = express();
 

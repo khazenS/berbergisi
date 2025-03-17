@@ -46,7 +46,6 @@ export const notificationSlice = createSlice({
             if(action.payload.status === false){
                 state.expiredError = true
             }
-            console.log(action.payload)
             state.subscription.isLoading = false
         })
         builder.addCase(subscribeUserToNotification.rejected, (state,action) => {
