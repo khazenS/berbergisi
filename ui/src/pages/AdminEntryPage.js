@@ -14,6 +14,7 @@ import { resetNotificationExpiredError } from '../redux/features/adminPageSlices
 function AdminEntryPage(){
     const dispatch = useDispatch()
     const adminDatas = useSelector( state => state.adminLogin.adminDatas)
+    const isLoading = useSelector( state => state.adminLogin.isLoading)
     const isLogin = useSelector( state => state.adminLogin.isLogin)
     const wrongInputs = useSelector( state => state.adminLogin.wrongInputs)
     const navigate = useNavigate()
@@ -32,7 +33,7 @@ function AdminEntryPage(){
             navigate('/admin')
             dispatch(resetAdminDatas())
         }
-    },[dispatch,navigate,isLogin])
+    },[dispatch,navigate,isLogin,isLoading])
 
     // Reset all adminTokenErrors for navigate loop bug
     useEffect( () => {

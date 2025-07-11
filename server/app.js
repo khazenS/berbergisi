@@ -20,7 +20,7 @@ const server = createServer(app);
 // Initilize the socket here
 initializeSocket(server)
 
-// Basic route
+// Basic route for testing
 app.get('/helloworld', (req, res) => {
   res.send('<h1 style="text-align:center; margin-top:1em;">Hello World</h1>');
 });

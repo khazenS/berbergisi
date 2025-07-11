@@ -8,14 +8,15 @@ import { decryptData } from "../../../helpers/cryptoProcess.js";
 import ListIcon from '@mui/icons-material/List';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpIcon from '@mui/icons-material/Help';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import VerifiedIcon from '@mui/icons-material/Verified';
+
 export default function LineTable(){
     const dispatch = useDispatch()
     const dailyQue = useSelector( state => state.booking.dailyQueue )
-    const [openLine,setOpenLine] = useState(false)
     // queueToken
     const queueToken = useSelector( state => state.register.queueToken.token)
+    // Decoded queue token
+    const decodedQueueToken = queueToken ? jwtDecode(queueToken) : null
 
     useEffect(()=>{
       // Listen socket for new user to write it on ui
@@ -59,19 +60,8 @@ export default function LineTable(){
           backgroundRepeat:'no-repeat', 
           height:'45vh'
         }}>
-          { queueToken ? 
+          { dailyQue.length !== 0  ? 
           <>
-          <Box sx={{display:'flex',justifyContent:'center'}}>
-          <Fab sx={{fontWeight:'bold'}}variant="extended" size="medium" color="primary" onClick={() => {setOpenLine(!openLine)}}>
-            {openLine == true ? 
-            <><ArrowDownwardIcon sx={{ mr: 1 }} />Sirayi kapat</>
-            :
-            <><ArrowForwardIcon sx={{ mr: 1 }} />Sirayi goster</>
-            }
-          </Fab>            
-          </Box>
-
-          <Collapse in={openLine}>
           <TableContainer sx={{marginTop:5}}>
                 <Table>
                     <TableHead sx={{marginBottom:5}}>
@@ -100,16 +90,23 @@ export default function LineTable(){
                     </TableHead>
                     <TableBody>
                         {dailyQue.map((data) => (
-                          queueToken && data.userBookingID === jwtDecode(queueToken).userBookingID ? 
-                          <TableRow key={dailyQue.indexOf(data)} sx={{ border: '2px solid rgba(255,0,0,0.75)'}}>
+                          <TableRow key={dailyQue.indexOf(data)} sx={{  border: 
+                          queueToken && data.userBookingID === decodedQueueToken?.userBookingID ? '2px solid rgba(255,0,0,0.55)'
+                          : 'none'
+                          }}>
                             <TableCell >{dailyQue.indexOf(data) + 1}</TableCell>
-                            <TableCell align="center">{data.name}</TableCell>
-                            <TableCell align="center">{data.comingWith}</TableCell>
-                          </TableRow>
-                          :
-                          <TableRow key={dailyQue.indexOf(data)}>
-                            <TableCell>{dailyQue.indexOf(data) + 1}</TableCell>
-                            <TableCell align="center">{data.name}</TableCell>
+                            <TableCell align="center">  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                {data.name}
+                                {data.isVerified && (
+                                <VerifiedIcon 
+                                  sx={{ 
+                                    fontSize: '1rem',
+                                    color: 'primary.main'
+                                  }}
+                                />
+                              )}
+                              </Box>
+                            </TableCell>
                             <TableCell align="center">{data.comingWith}</TableCell>
                           </TableRow>
                         ))
@@ -117,58 +114,8 @@ export default function LineTable(){
                     </TableBody>
                 </Table>
             </TableContainer>
-          </Collapse>
           </>
           :
-          dailyQue.length !== 0 ? (
-            <>
-            <TableContainer sx={{marginTop:5}}>
-                <Table>
-                    <TableHead sx={{marginBottom:5}}>
-                        <TableRow sx={{marginBottom:5}}>
-                            <TableCell sx={{fontWeight:"bold",padding:0}}>
-                            <Box sx={{display:'flex',justifyContent:'center',alignItems:'center'}}>
-                            <ListIcon fontSize="small"/>
-                            Sıra
-                            </Box>
-                            </TableCell>
-
-                            <TableCell align="center" sx={{fontWeight:"bold",padding:0}}>
-                            <Box sx={{display:'flex',justifyContent:"center",alignItems:'center'}}>
-                              <PersonIcon fontSize="small" />
-                              İsim
-                            </Box>
-                            </TableCell>
-
-                            <TableCell align="center" sx={{fontWeight:"bold",padding:0}}>
-                            <Box sx={{display:'flex',justifyContent:"center",alignItems:'center'}}>
-                              <HelpIcon fontSize="small"/>
-                              Kaç Kişi
-                            </Box>
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {dailyQue.map((data) => (
-                          queueToken && data.userBookingID === jwtDecode(queueToken).userBookingID ? 
-                          <TableRow key={dailyQue.indexOf(data)} sx={{ border: '2px solid rgba(255,0,0,0.75)'}}>
-                            <TableCell >{dailyQue.indexOf(data) + 1}</TableCell>
-                            <TableCell align="center">{data.name}</TableCell>
-                            <TableCell align="center">{data.comingWith}</TableCell>
-                          </TableRow>
-                          :
-                          <TableRow key={dailyQue.indexOf(data)}>
-                            <TableCell>{dailyQue.indexOf(data) + 1}</TableCell>
-                            <TableCell align="center">{data.name}</TableCell>
-                            <TableCell align="center">{data.comingWith}</TableCell>
-                          </TableRow>
-                        ))
-                        }
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            </>
-          ) : 
           <></>
           }
         </div>

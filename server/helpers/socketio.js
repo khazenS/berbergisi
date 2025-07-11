@@ -11,15 +11,6 @@ const initializeSocket = (server) => {
             transports: ["websocket"]
         });        
     }
-    io.on("connection", (socket) => {
-        console.log("Socket Connection.")
-        
-        socket.on("disconnect", () => {
-            console.log("Socket Disconnection.")
-        });
-    });
-    console.warn("Socketio was initilized!");
-    return io;
 };
 
 const getIO = () => {

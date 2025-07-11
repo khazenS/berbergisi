@@ -9,8 +9,12 @@ const userSchema = new mongoose.Schema({
         type:String
     },
     phoneNumber:{
-        type:Number,
-        unique:true
+        type:Number
+    },
+    userType: {
+        type: String,
+        enum: ['verified', 'unverified'],
+        required: true
     },
     userCount:{
         type:[{
@@ -23,11 +27,21 @@ const userSchema = new mongoose.Schema({
         type:Number,
         default:0
     },
-    existTime:{
+    createdAt:{
         type:Date
-    }    
+    },
+    token : {
+        type: String,
+        default: null
+    },
+        
 })
 
+// This is for only there will be one user with same phone number and user type
+userSchema.index(
+    { phoneNumber: 1, userType: 1 }, 
+    { unique: true }
+)
 userSchema.plugin(AutoIncrement,{ inc_field: 'userID' })
 
 const User = mongoose.model('User',userSchema,'Users');

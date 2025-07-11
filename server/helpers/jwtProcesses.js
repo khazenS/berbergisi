@@ -49,9 +49,37 @@ function verificationQueToken(firstToken){
     return response 
 }
 
+// Verified User token processes
+function getTokenforVerifiedUser(userID,serviceID,comingWith){
+    const token = jwt.sign({
+        userType:'verified',
+        userID,
+        serviceID,
+        comingWith
+    },process.env.JWT_SECRET_VERIFIED_USER)
+
+    return token
+}
+
+function verificationTokenforVerifiedUser(firstToken){
+    let response = ""
+    jwt.verify(firstToken,process.env.JWT_SECRET_VERIFIED_USER, (err,decode) => {
+        if (err) {
+            response = false
+        }
+        else{
+            response = decode
+        }
+    })
+
+    return response 
+}
+
 module.exports = {
     getTokenforAdmin,
     verificationToken,
     getTokenforQue,
-    verificationQueToken
+    verificationQueToken,
+    getTokenforVerifiedUser,
+    verificationTokenforVerifiedUser
 }

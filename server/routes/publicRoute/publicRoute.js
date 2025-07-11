@@ -1,5 +1,5 @@
 const express = require('express');
-const { getTokenforAdmin, getTokenforQue, verificationQueToken } = require('../../helpers/jwtProcesses.js');
+const { getTokenforAdmin, getTokenforQue, verificationQueToken, getTokenforVerifiedUser, verificationTokenforVerifiedUser } = require('../../helpers/jwtProcesses.js');
 const { Shop } = require('../../database/schemas/shopSchema.js');
 const { User } = require('../../database/schemas/userSchema.js');
 const { DayBooking } = require('../../database/schemas/dayBookingSchema.js');
@@ -8,12 +8,12 @@ const { MonthBooking } = require('../../database/schemas/monthBookingSchema.js')
 const { UserBooking } = require('../../database/schemas/userBookingSchema.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
 const { getIO } = require('../../helpers/socketio.js');
-const { registerRequestLimiter, requestLimiter } = require('../../middleware/requestLimiter.js');
 const webpush = require('web-push');
+const verifiedRouter = require('./verifiedRoute.js');
 const publicRouter = express.Router()
 
 //Learn the shop open or close
-publicRouter.get('/getShopStatus', requestLimiter ,async (req,res)=>{
+publicRouter.get('/getShopStatus',async (req,res)=>{
     const shop = await Shop.findOne({shopID:1})
 
     const now = new Date()
@@ -61,9 +61,10 @@ publicRouter.get('/getShopStatus', requestLimiter ,async (req,res)=>{
     }
 })
 
-publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
-    const user = await User.findOne({phoneNumber:req.body.data.phoneNumber})
-    const adminDoc = await Admin.findOne({})
+publicRouter.post('/register-user',async (req,res) => {
+    const isVerified = req.body.data.isVerified
+    const user = isVerified ? await User.findOne({phoneNumber:req.body.data.phoneNumber, userType:'verified'}) : await User.findOne({phoneNumber:req.body.data.phoneNumber, userType:'unverified'})
+    const adminDoc = await Admin.findOne()
     // date 
     const now = new Date();
     const offset = now.getTimezoneOffset()
@@ -81,25 +82,47 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     
     let updatedUser = null
 
-    // Conntrolling for is user exists
-    if(!user){
-        // new user record
-        updatedUser = await new User({
-            name:req.body.data.name,
-            phoneNumber:req.body.data.phoneNumber,
-            existTime:localDate
-        }).save()
+    // Controlling for is user exists
+    if(isVerified){
+        const userToken = req.body.data.token
+        if(verificationTokenforVerifiedUser(userToken) && user && user.token === userToken){
+            // user exists and verified
+            updatedUser = user
+        }else{
+            return res.json({
+                status:false,
+                message:'Verified token is not valid. Please try again.'
+            })
+        }
     }else{
-        //update user
-        user.name = req.body.data.name
-        updatedUser = await user.save()
+        if(!user){
+            // new user record
+            updatedUser = await new User({
+                userType:'unverified',
+                name:req.body.data.name,
+                phoneNumber:req.body.data.phoneNumber,
+                createdAt:localDate
+            }).save()
+        }else{
+            //update user
+            user.name = req.body.data.name
+            updatedUser = await user.save()
+        }        
     }
+
     const shop = await Shop.findOne()
     const service = !req.body.data.serviceID ? shop.services[0] : shop.services.find(service => service.serviceID == req.body.data.serviceID)
+    if(!service || !shop){
+        return res.json({
+            status:false,
+            message:'Dükkanın veya hizmet bulunamadı. Sayfayı yenileyip tekrar deneyiniz.'
+        })
+    }
+
     //new user booking record
-    const newUserBooking = await new UserBooking({
+    let newUserBooking = await new UserBooking({
         userID:updatedUser.userID,
-        serviceID: !req.body.data.serviceID ? shop.services[0].serviceID : req.body.data.serviceID,
+        serviceID: service.serviceID,
         comingWith:req.body.data.comingWithValue,
         bookingToken:null,
         registerTime:localDate
@@ -107,6 +130,16 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     const bookingToken = getTokenforQue(newUserBooking.userBookingID,lastDayBooking.dayBookingID)
     newUserBooking.bookingToken = bookingToken
     await newUserBooking.save()
+
+    // This is for a bug that I lived once so its just prevention.
+    if(!updatedUser || !newUserBooking){
+        console.err('updatedUser is null or undefined')
+        return res.json({
+            status:false,
+            message:'There is an error while creating user.'
+        })
+    } 
+
     //push to que new user
     lastDayBooking.usersBooking.push(newUserBooking.userBookingID)
     await lastDayBooking.save()
@@ -123,7 +156,8 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
             comingWith:req.body.data.comingWithValue,
             userBookingID:newUserBooking.userBookingID,
             phoneNumber:req.body.data.phoneNumber,
-            shownDate:formattedDate
+            shownDate:formattedDate,
+            isVerified: updatedUser.userType === 'verified' ? true : false
         }
     )
     // This part for sending notification to admin
@@ -139,14 +173,14 @@ publicRouter.post('/register-user', registerRequestLimiter ,async (req,res) => {
     }
 
     getIO().emit('newUser',cryptedData)
-    res.json({
+    return res.json({
         status:true,
         queueToken:bookingToken
     })
 })
 
 // If exists get daily booking or create new one
-publicRouter.get('/get-dailyBooking',requestLimiter, async (req,res) => {
+publicRouter.get('/get-dailyBooking', async (req,res) => {
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
     const shop = await Shop.findOne()
     const responseArray = []
@@ -162,7 +196,8 @@ publicRouter.get('/get-dailyBooking',requestLimiter, async (req,res) => {
                 },
                 comingWith:currentUserBooking.comingWith,
                 userBookingID:userBookingID,
-                phoneNumber : null
+                phoneNumber : null,
+                isVerified:false
             }
             responseArray.push(responseData)
         }else{
@@ -175,7 +210,8 @@ publicRouter.get('/get-dailyBooking',requestLimiter, async (req,res) => {
                 },
                 comingWith:currentUserBooking.comingWith,
                 userBookingID:userBookingID,
-                phoneNumber : encryptData(currentUser.phoneNumber)
+                phoneNumber : encryptData(currentUser.phoneNumber),
+                isVerified : currentUser.userType === 'verified' ? true : false
             }
             responseArray.push(responseData)
         }
@@ -193,7 +229,7 @@ publicRouter.get('/get-dailyBooking',requestLimiter, async (req,res) => {
 })
 
 // Check the que token when page uploaded
-publicRouter.post('/check-queue-token', requestLimiter , async (req,res) => {
+publicRouter.post('/check-queue-token',async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
     if(tokenBody !== false){
         res.json({
@@ -210,11 +246,10 @@ publicRouter.post('/check-queue-token', requestLimiter , async (req,res) => {
 })
 
 // Controlling queueToken for cancel the order and then cancel
-publicRouter.post('/cancel-queue', requestLimiter , async (req,res) => {
+publicRouter.post('/cancel-queue', async (req,res) => {
     const tokenBody = verificationQueToken(req.body.queueToken)
     const adminDoc = await Admin.findOne({})
-    if(tokenBody !== false){
-        
+    if(tokenBody){
         const userBooking = await UserBooking.findOne({userBookingID:tokenBody.userBookingID})
         const dayBooking = await DayBooking.findOne({dayBookingID:tokenBody.dayBookingID})
         if(req.body.queueToken === userBooking.bookingToken && dayBooking.usersBooking.indexOf(userBooking.userBookingID) > -1){
@@ -252,7 +287,7 @@ publicRouter.post('/cancel-queue', requestLimiter , async (req,res) => {
 
 
 //Create a admin access token and send to ui 
-publicRouter.post('/admin-login', requestLimiter , async (req,res) => {
+publicRouter.post('/admin-login' , async (req,res) => {
     const admin = await Admin.findOne()
     if(admin.username === req.body.username && admin.password === req.body.password){
         const adminAccessToken = getTokenforAdmin()
@@ -273,7 +308,7 @@ publicRouter.post('/admin-login', requestLimiter , async (req,res) => {
 })
 
 // getting message for announcment
-publicRouter.get('/get-message', requestLimiter , async (req,res) => {
+publicRouter.get('/get-message' , async (req,res) => {
     const shop = await Shop.findOne()
     const message = shop.showMessage
     res.json({
@@ -281,5 +316,7 @@ publicRouter.get('/get-message', requestLimiter , async (req,res) => {
     })
 })
 
+// This route is for verify and relatred operations
+publicRouter.use('/verified', verifiedRouter )
 
 module.exports = publicRouter

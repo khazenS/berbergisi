@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { Provider } from 'react-redux'
 import store from "./redux/store.js"
-import axios from 'axios';
 import { getDailyBookingAdmin } from './redux/features/adminPageSlices/adminDailyBookingSlice.js';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

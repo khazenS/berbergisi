@@ -15,6 +15,7 @@ let initialState = {
         isLoading:false
     },
     registerReqError:false,
+    registerErrMessage:'',
     totalReqError:false,
     errors:false
 }
@@ -24,7 +25,9 @@ export const registerUser = createAsyncThunk('registerUser', async (values)=>{
         name : values.name,
         phoneNumber : values.phoneNumber,
         serviceID:values.serviceID,
-        comingWithValue: values.comingWithValue
+        comingWithValue: values.comingWithValue,
+        isVerified: values.token ? true : false,
+        token: values.token ? values.token : null
     }   
     const response = await axios.post(process.env.REACT_APP_SERVER_URL+'public/register-user',{
         type:'crypted',
@@ -49,7 +52,7 @@ export const cancelQue = createAsyncThunk('cancelQue', async (token) => {
     return response.data
 })
 
-// This is for new user register or updating exist user with name and returning token
+
 export const registerSlice = createSlice({
     name:'registerSlice',
     initialState,
@@ -63,6 +66,7 @@ export const registerSlice = createSlice({
         },
         resetReqError : (state) => {
             state.registerReqError = false
+            state.registerErrMessage = ''
         },
         setServiceID: (state,action) => {
             state.values.serviceID = action.payload
@@ -78,7 +82,10 @@ export const registerSlice = createSlice({
             state.errors = false
         })
         builder.addCase(registerUser.fulfilled, (state,action)=>{
-            if(action.payload.status == false && action.payload.req_error == 'register') state.registerReqError = true
+            if(action.payload.status == false){
+                state.registerErrMessage = action.payload.message
+                state.registerReqError = true
+            } 
             else{
                 state.values.serviceID = null
                 state.values.comingWithValue = 1

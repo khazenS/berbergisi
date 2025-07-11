@@ -32,9 +32,10 @@ const style = {
 function InfoBoxes(){
     const dispatch = useDispatch()
     const [userName,setUserName] = useState(null)
-    const [costumer,setCostumer] = useState(null)
+    const [costumerCount,setCostumerCount] = useState(null)
     const [estimatedHour,setEstimatedHour] = useState(null)
     const [estimatedMunite,setEstimatedMunite] = useState(null)
+    const [calculateFlag, setCalculateFlag] = useState(false);
 
     const [open, setOpen] = useState(false)
     // This is for setting errors for fetch data
@@ -52,6 +53,9 @@ function InfoBoxes(){
     const dailyQue = useSelector( state => state.booking.dailyQueue)
     // services state
     const services = useSelector( state => state.booking.services)
+    // Verified user state
+    const verifiedUser = useSelector( state => state.verification.user)
+    // Getting 
 
     // set serviceID as a default value 
     useEffect( () => {
@@ -87,77 +91,99 @@ function InfoBoxes(){
 
     // print out the count of costumer of the line
     useEffect(() => {
-        if(queueToken.token && dailyQue){
-            let totalCostumer = 0
-            let totalMunite = 0
-            // This is for just calculating front order datas of specified customer
-            const index = dailyQue.findIndex(person => person.userBookingID === jwtDecode(queueToken.token).userBookingID)
-            //Declare user name for print out
-            if(index != -1) setUserName(dailyQue[index].name)
-
-            const newDailyQue = dailyQue.slice(0,index)
-            for(const queCostumer of newDailyQue){
-                totalCostumer += queCostumer.comingWith
-                totalMunite += queCostumer.service.estimatedTime
-                totalMunite += (queCostumer.comingWith - 1) * services[0].estimatedTime
+        if (dailyQue && services && services.length > 0) {
+            setCalculateFlag(true)
+            let totalCustomer = 0;
+            let totalMinute = 0;
+            let name = null;
+    
+            if (queueToken.token) {
+                const index = dailyQue.findIndex(person =>
+                    person.userBookingID === jwtDecode(queueToken.token).userBookingID
+                );
+                if (index !== -1) {
+                    name = dailyQue[index].name;
+                    const newDailyQue = dailyQue.slice(0, index);
+                    for (const person of newDailyQue) {
+                        totalCustomer += person.comingWith;
+                        totalMinute += person.service.estimatedTime;
+                        totalMinute += (person.comingWith - 1) * services[0].estimatedTime;
+                    }
+                }
+            } else {
+                for (const person of dailyQue) {
+                    totalCustomer += person.comingWith;
+                    totalMinute += person.service.estimatedTime;
+                    totalMinute += (person.comingWith - 1) * services[0].estimatedTime;
+                }
             }
-            setEstimatedHour((totalMunite / 60) | 0)
-            setEstimatedMunite(totalMunite % 60)
-            setCostumer(totalCostumer)
+        
+            setUserName(name);
+            setCostumerCount(totalCustomer);
+            setEstimatedHour(Math.floor(totalMinute / 60));
+            setEstimatedMunite(totalMinute % 60);
+            setCalculateFlag(false);
         }
-        else if (dailyQue) {
-            let totalCostumer = 0
-            let totalMunite = 0
-            for(const queCostumer of dailyQue){
-                totalCostumer += queCostumer.comingWith
-                totalMunite += queCostumer.service.estimatedTime
-                totalMunite += (queCostumer.comingWith - 1) * services[0].estimatedTime
-            }
-            setEstimatedHour((totalMunite / 60) | 0)
-            setEstimatedMunite(totalMunite % 60)
-            setCostumer(totalCostumer)
-        }
-    },[dailyQue,queueToken.token])
+    }, [dailyQue, services, queueToken.token]);
 
     //submit process
     const handleSubmit = () =>{
-        let isNameError = false;
-        let isPhoneError = false;
         let isSame = false
-
-        // controlling there are any error on inputs
-        if(state.name.length < 3 || state.name.length > 18){
-        isNameError = true
-        setNameError(true)
-        }
-        if(state.phoneNumber.toString().length !== 10){
-        isPhoneError = true
-        setPhoneError(true)
-        }
-        // controlling phone numbers is same
-        dailyQue.forEach(user => {
-        if(user.phoneNumber != null && decryptData(user.phoneNumber) === state.phoneNumber){
-            isSame = true
-        }
-        });
-
-        if(isNameError){
-        setNameError(true)
-        }else if(isPhoneError){
-        setPhoneError(true)
-        }else if(services === null || services.length === 0){
-        setServiceError(true)
+        if(verifiedUser.token){
+            // controlling phone numbers is same
+            dailyQue.forEach(user => {
+            if(user.phoneNumber != null && decryptData(user.phoneNumber) === verifiedUser.phoneNumber){
+                isSame = true
+            }
+            });
+            if(isSame === true){
+                setSamePhoneError(true)
+                return
+            }
+            dispatch(registerUser({
+                name:verifiedUser.name,
+                phoneNumber:verifiedUser.phoneNumber,
+                serviceID:verifiedUser.service.serviceID,
+                comingWithValue:verifiedUser.comingWith,
+                token:verifiedUser.token
+            }))
         }else{
-        if(isSame === true){
-            setSamePhoneError(true)
-        }else{
-            if(state.serviceID === null) setServiceID(services[0].serviceID);
-            dispatch(registerUser(state))                                                                                                                
-            setOpen(false)
-        }      
+            let isNameError = false;
+            let isPhoneError = false;
+
+            // controlling there are any error on inputs
+            if(state.name.length < 3 || state.name.length > 18){
+            isNameError = true
+            setNameError(true)
+            }
+            if(state.phoneNumber.toString().length !== 10){
+            isPhoneError = true
+            setPhoneError(true)
+            }
+            // controlling phone numbers is same
+            dailyQue.forEach(user => {
+            if(user.phoneNumber != null && decryptData(user.phoneNumber) === state.phoneNumber){
+                isSame = true
+            }
+            });
+
+            if(isNameError){
+            setNameError(true)
+            }else if(isPhoneError){
+            setPhoneError(true)
+            }else if(services === null || services.length === 0){
+            setServiceError(true)
+            }else{
+            if(isSame === true){
+                setSamePhoneError(true)
+            }else{
+                if(state.serviceID === null) setServiceID(services[0].serviceID);
+                dispatch(registerUser(state))                                                                                                                
+                setOpen(false)
+            }      
+            }            
         }
     }
-
 
     // remove socket for cancelling on admin panel
     useEffect( () => {
@@ -209,6 +235,7 @@ function InfoBoxes(){
     const handleCancel = () => {
         dispatch(cancelQue(queueToken.token))
     }
+
     return (
         <div>
             {
@@ -217,22 +244,26 @@ function InfoBoxes(){
                 //If there is token then print out that.
                 <Grid container spacing={1} sx={{marginTop:3,marginBottom:3}}>
                     <Grid xs={12} item sx={{display:"flex",justifyContent:"center",alignItems:"center"}} >
-                        <Typography sx={{fontWeight:'bold',fontSize:'1.25rem'}}> {userName} </Typography>
+                        <Typography sx={{fontWeight:'bold',fontSize:'1.25rem'}}> {!verifiedUser.token ? userName : null} </Typography>
                     </Grid>
                     <Grid xs={6} item sx={{display:"flex",justifyContent:"left",alignItems:"center",marginTop:2}} >
                         <Avatar sx={{ bgcolor:"green", height:36  , width: 36 }}></Avatar>
                         <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Typography sx={{fontSize:'0.85rem'}}>Önünüzdeki kişi</Typography>
-                        { costumer === null ? null : <Typography sx={{ fontWeight: "bold", fontSize: "1.15rem"}}>{costumer} kişi</Typography>}
+                        { (!costumerCount && costumerCount !== 0) || calculateFlag ? null : <Typography sx={{ fontWeight: "700", fontSize: "1.25rem" }}>{costumerCount}</Typography>}
                         </Container>
                     </Grid>
                     <Grid xs={6} item sx={{display:"flex",justifyContent:"center",alignItems:"center",marginTop:2}} >
                         <Avatar sx={{ bgcolor:"blue",height:36  , width: 36  }}><AccessAlarmIcon></AccessAlarmIcon></Avatar>
                         <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Typography sx={{fontSize:'0.85rem'}}>Tahmini Zaman</Typography>
-                            {costumer === null || estimatedHour === null || estimatedMunite === null ? null : 
+                            { costumerCount === null   || estimatedHour === null || estimatedMunite === null || calculateFlag ? null : 
                             <Typography sx={{ fontWeight: "bold",fontSize:"1.15rem"}}>{
-                                costumer === 0 ? 'Boş' : estimatedHour === 0 ? estimatedMunite + ' dk' : estimatedMunite === 0 ? estimatedHour + ' s' : estimatedHour + ' s' + estimatedMunite + ' dk'
+                                costumerCount === 0 || (estimatedHour === 0 && estimatedMunite === 0) ? '. . .' : (
+                                    estimatedHour === 0 ? estimatedMunite + ' dk' 
+                                    : estimatedMunite === 0 ? estimatedHour + ' s' 
+                                    : estimatedHour + 's ' + estimatedMunite + 'dk'   
+                                )
                             }</Typography>} 
                         </Container>       
                     </Grid>
@@ -244,7 +275,7 @@ function InfoBoxes(){
 
                         <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <Typography>Sıradaki kişi</Typography>
-                        { costumer === null ? null : <Typography sx={{ fontWeight: "700", fontSize: "1.25rem" }}>{costumer}</Typography>}
+                        { (!costumerCount && costumerCount !== 0) || calculateFlag ? null : <Typography sx={{ fontWeight: "700", fontSize: "1.25rem" }}>{costumerCount}</Typography>}
                         </Container>
                     </Grid>
                     <Grid xs={6} item sx={{display:"flex",justifyContent:"center",alignItems:"center",marginTop:2}} >
@@ -252,10 +283,15 @@ function InfoBoxes(){
 
                         <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Typography>Tahmini Zaman</Typography>
-                            {costumer === null || estimatedHour === null || estimatedMunite === null ? null : 
+                            { costumerCount === null   || estimatedHour === null || estimatedMunite === null || calculateFlag ? null :
                             <Typography sx={{ fontWeight: "700",fontSize:"1rem"}}>{
-                                costumer === 0 ? 'Boş' : estimatedHour === 0 ? estimatedMunite + ' dk' : estimatedMunite === 0 ? estimatedHour + ' s' : estimatedHour + ' s' + estimatedMunite + ' dk'
-                            }</Typography>} 
+                                costumerCount === 0 || (estimatedHour === 0 && estimatedMunite === 0) ? '. . .' : (
+                                    estimatedHour === 0 ? estimatedMunite + ' dk' 
+                                    : estimatedMunite === 0 ? estimatedHour + ' s' 
+                                    : estimatedHour + 's ' + estimatedMunite + 'dk'   
+                                )
+                            }</Typography>
+                            } 
                         </Container>      
                     </Grid>
                 </Grid>
@@ -283,7 +319,7 @@ function InfoBoxes(){
                 orderFeature === true ?
                 <Button
                 variant="contained"
-                onClick={handleOpen}
+                onClick={verifiedUser.token ? handleSubmit : handleOpen}
                 sx={{
                     margin: "1.75rem auto",
                     display: "block",

@@ -6,9 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
     getDailyStats,
   getMonthlyStats,
-  getStats,
   getWeeklyStats,
-  newFinishedCut,
   resetDaily,
 } from "../../redux/features/adminPageSlices/shopStatsSlice";
 import { socket } from "../../helpers/socketio";
@@ -26,9 +24,6 @@ export default function ShopStats() {
   const [openWeeklyStats,setWeeklyStats] = useState(false)
   const [openMonthlyStats,setMonthlyStats] = useState(false)
  
-  useEffect( () => {
-    console.log(weeklyStatsValue)
-  },[weeklyStatsValue]) 
   // When status changed socket
   useEffect(() => {
     socket.on("changedStatus", (datas) => {

@@ -9,6 +9,7 @@ const { getIO } = require('../../helpers/socketio.js');
 const { Admin } = require('../../database/schemas/adminSchema.js');
 const { RequestCounter } = require('../../database/schemas/requestCounterSchema.js');
 const webpush = require('web-push');
+const { checkingInfos } = require('../../helpers/smsVerificationHelper.js');
 const adminRouter = express.Router()
 
 // Changin status for shop opening or closing
@@ -123,7 +124,8 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
                         name:service.name,
                         estimatedTime:service.estimatedTime
                     },
-                    shownDate:formattedDate
+                    shownDate:formattedDate,
+                    isVerified: false
                 }
                 responseArray.push(responseData)
             }else{
@@ -137,7 +139,8 @@ adminRouter.get('/get-dailyBooking', async (req,res) => {
                         name:service.name,
                         estimatedTime:service.estimatedTime
                     },
-                    shownDate:formattedDate
+                    shownDate:formattedDate,
+                    isVerified: currentUser.userType === 'verified' ? true : false
                 }
                 responseArray.push(responseData)
             }
@@ -293,17 +296,26 @@ adminRouter.post('/fast-register',async (req,res) => {
     const formattedDate = `${day}-${month}-${year} ${hours}:${minutes}`;
 
     const latestRecord = await DayBooking.findOne().sort({existDayDate : -1})
+
     // new user booking
     const newUserBooking = await new UserBooking({
         name:req.body.name,
         serviceID:shop.services[0].serviceID,
         comingWith:1,
         bookingToken:null,
-        registerTime:localDate
+        registerTime:localDate,
+        isVerified:false
     }).save()
     latestRecord.usersBooking.push(newUserBooking.userBookingID)
 
-    await latestRecord.save()
+    await latestRecord.save()        
+    if(newUserBooking === null && newUserBooking === undefined){
+        console.error('There is an error while fast register')
+        return res.json({
+            status:false,
+            message:'There is an error while fast register'
+        })
+    }
 
     const fastUserDatas = encryptData({
         name:req.body.name,
@@ -400,6 +412,7 @@ adminRouter.post('/add-message' , async (req,res) => {
 adminRouter.post('/set-time', async (req,res) => {
     const shop = await Shop.findOne()
     const setDate  = new Date(req.body.date)
+
     shop.costumOpeningDate = setDate
     // Date format processes 
     const localDate = new Date(setDate.getTime() + (setDate.getTimezoneOffset() * 60000));
@@ -413,7 +426,6 @@ adminRouter.post('/set-time', async (req,res) => {
     const dayName = localDate.toLocaleDateString('tr-TR', { weekday: 'long' })
 
     const formattedDate = `${day}.${month}.${year} ${hours}:${minutes} ${dayName}`
-
     shop.costumFormattedOpeningDate = formattedDate
     await shop.save()
     getIO().emit('set-oto-opening-time',{set:true,date:shop.costumOpeningDate})
@@ -528,6 +540,7 @@ adminRouter.get('/get-weekly-stats', async (req,res) => {
     const localNowDate = new Date(now.getTime() - (offset * 60 * 1000))
     const today = localNowDate.getDay() === 0 ? 6 : localNowDate.getDay() - 1
     const beginingWeek = new Date(localNowDate.getTime() - (today * 24 * 60 * 60 * 1000)).setHours(0,0,0,0)
+
     const weekDays = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"]
     
     const weeklyRecords = await DayBooking.find({
@@ -539,12 +552,16 @@ adminRouter.get('/get-weekly-stats', async (req,res) => {
     let totalIncome = 0
     let weeklyCounts = []
     for(day = 0; day <= today;day++){
-        const todayRecord = weeklyRecords.find( record => record.existDayDate.getDate() === new Date(localNowDate - (today - day) * 24 * 60 * 60 * 1000).getDate())
+        const todayRecord = weeklyRecords.find( record => 
+            record?.existDayDate.getDate() === new Date(localNowDate - (today - day) * 24 * 60 * 60 * 1000).getDate()
+        )
         weeklyCounts.push({
             name:weekDays[day],
-            income:todayRecord.dailyPaid
+            income:todayRecord?.dailyPaid || 0
         })
-        totalIncome += todayRecord.dailyPaid
+        if(todayRecord?.dailyPaid){
+           totalIncome += todayRecord.dailyPaid 
+        }
     }
     res.json({
         status:true,
@@ -577,6 +594,13 @@ adminRouter.get('/get-monthly-stats', async (req,res) => {
     res.json({
         status:true,
         counts
+    })
+})
+
+adminRouter.post('/send-sms', checkingInfos ,async (req,res) => {
+    res.json({
+        status:true,
+        message:"SMS was sent"
     })
 })
 module.exports = adminRouter;

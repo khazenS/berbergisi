@@ -63,11 +63,13 @@ export const shopStatsSlice = createSlice({
                 }
             })
             const lastIndex = state.weeklyStats.counts.length - 1
-            state.weeklyStats.counts[lastIndex].income += action.payload.income
-            state.weeklyStats.weeklyIncome += action.payload.income
-            state.monthlyStats.counts.forEach( (service,i) => {
-                service.income += action.payload.income
-            })
+            if( lastIndex !== -1 ){
+                state.weeklyStats.counts[lastIndex].income += action.payload.income
+                state.weeklyStats.weeklyIncome += action.payload.income
+                state.monthlyStats.counts.forEach( (service,i) => {
+                    service.income += action.payload.income
+                })                
+            }
         },
         increaseAmountStats : (state,action) => {
             state.dailyStats.dailyIncome += action.payload
@@ -95,7 +97,6 @@ export const shopStatsSlice = createSlice({
             state.dailyStats.error = false
         })
         builder.addCase(getDailyStats.fulfilled, (state,action) => {
-            console.log(action.payload)
             state.dailyStats.counts = action.payload.dailyCounts
             state.dailyStats.dailyIncome = action.payload.dailyIncome
             state.dailyStats.dataIsReady = true
@@ -111,7 +112,6 @@ export const shopStatsSlice = createSlice({
             state.weeklyStats.error = false
         })
         builder.addCase(getWeeklyStats.fulfilled, (state,action) => {
-            console.log(action.payload)
             state.weeklyStats.counts = action.payload.weeklyCounts
             state.weeklyStats.weeklyIncome = action.payload.totalIncome
             state.weeklyStats.dataIsReady = true

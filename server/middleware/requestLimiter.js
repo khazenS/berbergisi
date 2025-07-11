@@ -1,71 +1,219 @@
-const { RequestCounter } = require("../database/schemas/requestCounterSchema")
+const { RequestLimiterSMS } = require("../database/schemas/smsLimiterSchema")
+const { BlockedUsers } = require("../database/schemas/blockedUsersSchema")
+const axios = require('axios');
+const { SMSVerification } = require("../database/schemas/smsVerification");
 
-const requestLimiter = async (req,res,next) => {
+
+const smsReqestLimiter = async (req,res,next) => {
+    // Requirements
     const ip = req.ip
-    const user_agent = req.headers['user-agent']
-    const key = ip + user_agent
+    const fingerprint = req.headers['fingerprint']
+    const phoneNumber = req.body.phoneNumber.replace(/\s+/g, '').trim();      
+    const reCAPTCHAToken = req.body.reCAPTCHAToken
+    const name = req.body.name;
 
-    const currentTime  = new Date()
-    const localCurrentTime = currentTime.setHours(currentTime.getHours() + 3)
-
-    let requestCounter = await RequestCounter.findOne({userKey : key })
-
-    if(!requestCounter) {
-        try{
-          requestCounter = await RequestCounter.create({ userKey: key })  
-        }catch{
-            requestCounter = await RequestCounter.findOne({userKey : key })
+    // reCAPTCHA verification
+    try {
+        // Google'a doğrulama isteği
+        const response = await axios.post(
+          `https://www.google.com/recaptcha/api/siteverify`,
+          null,
+          {
+            params: {
+              secret: process.env.RECAPTCHA_SECRET_KEY,
+              response: reCAPTCHAToken
+            }
+          }
+        );
+    
+        const recaptcha_data = response.data;
+    
+        if (!recaptcha_data.success) {
+          return res.json({ status:false , message: 'Token doğrulaması hatası.' });
         }
+
+        if (recaptcha_data.score < 0.5 || recaptcha_data.action !== 'send_sms') {
+            await BlockedUsers.create({
+                IP: ip,
+                fp_key: fingerprint,
+                phoneNumber: phoneNumber,
+                reason: 'reCAPTCHA low score or invalid action'
+            })
+            return res.json({ status:false , message: 'Bot davranışı şüphesi, kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.'});
+        }
+      } catch (err) {
+        console.error('reCAPTCHA error.', err);
+        return res.json({ status:false , message: 'Beklenmedik bir hata oluştu. reCAPTCHA' });
+    }
+
+
+    let smsRequestDoc = await RequestLimiterSMS.findOne({ fp_key: fingerprint })
+
+    if(!smsRequestDoc) {
+        smsRequestDoc = await RequestLimiterSMS.create({
+            name: name,
+            ip : {
+                current_ip: ip,
+                last_ip:null
+            },
+            fp_key: fingerprint,
+            phoneNumbers: [phoneNumber],
+            isIPChanged: false
+        })
     }else{
-        if((requestCounter.existDate.getTime()) + ( process.env.REQUEST_LIMIT_RESET_TIME * 60 * 60 * 1000) < localCurrentTime){
-            requestCounter.existDate = new Date(Date.now() + 3 * 60 * 60 * 1000);
-            requestCounter.requestCount.registerRequest = 0;
-            requestCounter.requestCount.totalRequest = 0;
+        if(name !== smsRequestDoc.name) smsRequestDoc.name = name
+        // Change IP address if it is different from the current one
+        if(ip !== smsRequestDoc.ip.current_ip && smsRequestDoc.ip.last_ip === null){
+            smsRequestDoc.ip.last_ip = smsRequestDoc.ip.current_ip
+            smsRequestDoc.ip.current_ip = ip
         }
-        if(requestCounter.requestCount.totalRequest >= process.env.TOTAL_REQUEST_LIMIT){
+        await smsRequestDoc.save()
+    }
+
+    // Suspected behaviour, IP address has changed 2 times , block him
+    if(ip !== smsRequestDoc.ip.current_ip && ip !== smsRequestDoc.ip.last_ip) {
+        smsReqestLimiter.ip.last_ip = smsRequestDoc.ip.current_ip
+        smsRequestDoc.ip.current_ip = ip
+        await smsRequestDoc.save()
+        // Suspected behaviour, IP address has changed 2 times , block him
+        await BlockedUsers.create({
+            name: name,
+            IP: ip,
+            fp_key: fingerprint,
+            phoneNumber: phoneNumber,
+            reason: 'IP address changed multiple times'
+        })
+        return res.json({
+            status: false,
+            message: 'Kara listeye alındınız.Dükkan sahibiyle iletişime geçiniz.Son denemelerinizde IP adresiniz çok fazla değişti.'
+        })
+    }
+
+    // If phone number is not in the list, add it and check if it exceeds the limit
+    if(!smsRequestDoc.phoneNumbers.includes(phoneNumber)){
+        smsRequestDoc.phoneNumbers.push(phoneNumber)
+        await smsRequestDoc.save()
+        if(smsRequestDoc.phoneNumbers.length > 2) {
+            await BlockedUsers.create({
+                IP: ip,
+                fp_key: fingerprint,
+                phoneNumber: phoneNumber,
+                reason: 'Tried to send SMS to multiple phone numbers'
+            })
             return res.json({
-                request_error:true,
-                reqErrorType:'total',
-                message:'You tried a lot of request.'
+                status: false,
+                message: 'Farklı telefon numaralarıyla kayıt denediz. Dükkan sahibiyle iletişime geçiniz.'
             })
         }
     }
-    requestCounter.requestCount.totalRequest += 1
-    await requestCounter.save()
+
+
+    const firstTimeLimitation = 1000 * 60 * 60 * 12// 12 hour in milliseconds
+    smsRequestDoc.counter += 1
+    const nowTime = new Date().getTime()
+    // If the request is made within the first 12 hours and the counter is 4, reject the request
+    if((nowTime - smsRequestDoc.createdAt.getTime()) <= firstTimeLimitation && smsRequestDoc.counter == 4) {
+        return res.json({
+            status: false,
+            message: `Çok fazla SMS gönderme denemesi yaptınız. Lütfen daha sonra tekrar deneyiniz.`,
+        })
+    }
+    // If the request is made after the first 12 hours and the counter is 7, block the user
+    if( (nowTime - smsRequestDoc.createdAt.getTime()) > firstTimeLimitation && smsRequestDoc.counter >= 7){
+        await BlockedUsers.create({
+            name: name,
+            IP: ip,
+            fp_key: fingerprint,
+            phoneNumber: phoneNumber,
+            reason: 'Too many SMS requests in a short time'
+        })
+        return res.json({
+            status: false,
+            message: 'Çok fazla SMS gönderme denemesi yaptınız. Kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.',
+        })
+    }
+    await smsRequestDoc.save()
     next()
 }
 
-const registerRequestLimiter = async (req,res,next) => {
-    const ip = req.ip
-    const user_agent = req.headers['user-agent']
-    const key = ip + user_agent
+const checkBlockedUser = async (req, res, next) => {
+    let ip,fingerprint;
+    ip = req.ip
+    fingerprint = req.headers['fingerprint']        
+    const phoneNumber = req.body.phoneNumber.replace(/\s+/g, '').trim();   
 
-    const currentTime  = new Date()
-    const localCurrentTime = currentTime.setHours(currentTime.getHours() + 3)
-
-    let requestDoc = await RequestCounter.findOne({userKey : key})
-    if(!requestDoc) requestDoc = await RequestCounter.create({userKey : key})
-    else{
-        if((requestDoc.existDate.getTime()) + ( process.env.REQUEST_LIMIT_RESET_TIME * 60 * 60 * 1000) < localCurrentTime){
-            requestDoc.existDate = new Date(Date.now() + 3 * 60 * 60 * 1000);
-            requestDoc.requestCount.registerRequest = 0;
-            requestDoc.requestCount.totalRequest = 0;
+    const blockedUser = await BlockedUsers.findOne({ fp_key: fingerprint })
+    if (blockedUser) {
+        if(blockedUser.IP !== ip) {
+            blockedUser.IP = ip
+            await blockedUser.save()
         }
-        if(requestDoc.requestCount.registerRequest >= process.env.REGISTER_REQUEST_LIMIT){
-            return res.json({
-                status:false,
-                req_error:'register',
-                message:'You have tried a lot of register.'
-            })
+        if(blockedUser.phoneNumber !== phoneNumber) {
+            blockedUser.phoneNumber = phoneNumber
+            await blockedUser.save()
         }
+        return res.json({
+            status: false,
+            message: 'Kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.',
+        })
     }
-    requestDoc.requestCount.registerRequest += 1
-    requestDoc.requestCount.totalRequest += 1
-    await requestDoc.save()
+
+    next()
+}
+
+const verifyLimiter = async (req,res,next) => {
+    const token = req.body.token
+    const code = req.body.code
+    const reCAPTCHAToken = req.body.reCAPTCHAToken
+
+    if(!reCAPTCHAToken) return res.json({ status : false , message: 'reCAPTCHA token bulunamadı.' }); 
+
+    if(!token || !code) {
+        return res.json({
+            status: false,
+            message: "Eksik alanlar. Lütfen yeniden deneyin."
+        });
+    }
+
+    // reCAPTCHA verification
+    try {
+        // Google'a doğrulama isteği
+        const response = await axios.post(
+          `https://www.google.com/recaptcha/api/siteverify`,
+          null,
+          {
+            params: {
+              secret: process.env.RECAPTCHA_SECRET_KEY,
+              response: reCAPTCHAToken
+            }
+          }
+        );
+    
+        const recaptcha_data = response.data;
+    
+        if (!recaptcha_data.success) {
+          return res.json({ status:false , message: 'Token doğrulaması hatası.' });
+        }
+
+        if (recaptcha_data.score < 0.5 || recaptcha_data.action !== 'send_sms') {
+            await BlockedUsers.create({
+                IP: ip,
+                fp_key: fingerprint,
+                phoneNumber: phoneNumber,
+                reason: 'reCAPTCHA low score or invalid action'
+            })
+            return res.json({ status:false , message: 'Bot davranışı şüphesi, kara listeye alındınız. Dükkan sahibiyle iletişime geçiniz.'});
+        }
+      } catch (err) {
+        console.error('reCAPTCHA error.', err);
+        return res.json({ status:false , message: 'Beklenmedik bir hata oluştu. reCAPTCHA' });
+    }
+
     next()
 }
 
 module.exports = {
-    requestLimiter,
-    registerRequestLimiter
+    smsReqestLimiter,
+    checkBlockedUser,
+    verifyLimiter
 }

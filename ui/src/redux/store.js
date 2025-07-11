@@ -9,6 +9,7 @@ import shopSettingsSlice from './features/adminPageSlices/shopSettingsSlice.js'
 import showMessageSlice from './features/mainPageSlices/showMessageSlice.js'
 import shopStatsSlice from './features/adminPageSlices/shopStatsSlice.js'
 import notificationSlice from './features/adminPageSlices/notificationSlice.js'
+import verificationUserSlice  from './features/mainPageSlices/verificationUserSlice.js'
 export default configureStore({
   reducer: {
     register: registerReducer,
@@ -20,6 +21,7 @@ export default configureStore({
     shopSettings: shopSettingsSlice,
     showMessage : showMessageSlice,
     shopStats:shopStatsSlice,
-    notification:notificationSlice
+    notification:notificationSlice,
+    verification:verificationUserSlice
   },
 })

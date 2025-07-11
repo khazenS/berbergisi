@@ -64,11 +64,12 @@ export const adminLoginSlice = createSlice({
             else{
                 if(action.payload.status === true){
                     localStorage.setItem('adminAccessToken',action.payload.adminAccessToken)
-                    state.isLogin = true
+                    state.isLogin = true    
                 }else{
                     state.wrongInputs = true
                 }                
             }
+            state.isLoading = false
         })
         builder.addCase(adminLogin.rejected,(state) => {
             state.error = true
@@ -82,9 +83,8 @@ export const adminLoginSlice = createSlice({
             if(action.payload.status === false && action.payload.errorType === "admin access token"){
                 state.expiredError = true
             }
-            state.isLoading = false
             state.isLogin = false
-            
+            state.isLoading = false
         })
         builder.addCase(controlAdminAccessToken.rejected, (state) => {
             state.error = true

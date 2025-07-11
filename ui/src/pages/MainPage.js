@@ -9,9 +9,11 @@ import { resetReqError } from '../redux/features/mainPageSlices/registerSlice.js
 import { dailyResetTRE } from '../redux/features/mainPageSlices/dailyBookingSlice.js';
 import { resgisterResetTRE } from '../redux/features/mainPageSlices/registerSlice.js';
 import { messageResetTRE } from '../redux/features/mainPageSlices/showMessageSlice.js';
+
 function MainPage(){
     const dispatch = useDispatch()
     const registerReqError = useSelector(state => state.register.registerReqError)
+    const registerErrMessage = useSelector(state => state.register.registerErrMessage)
 
     const dailyBookingTotalError = useSelector(state => state.booking.totalReqError)
     const registerTotalError = useSelector( state => state.register.totalReqError)
@@ -41,7 +43,7 @@ function MainPage(){
             {
                 registerReqError === true ? 
                 <div style={{zIndex:'999',position:'fixed',marginTop:5,top:'20px',left:'10px',right:'20px'}}>
-                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> Çok fazla kayıt denediniz.Lütfen daha sonra tekar deneyiniz.</Alert>
+                    <Alert severity="error" variant='filled' sx={{fontWeight:'bold'}}> {registerErrMessage} </Alert>
                 </div> : 
                 <></>
             }

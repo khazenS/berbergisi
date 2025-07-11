@@ -12,6 +12,7 @@ import { socket } from "../../helpers/socketio";
 import { useNavigate } from "react-router-dom";
 import { newFinishedCut } from "../../redux/features/adminPageSlices/shopStatsSlice";
 import { decryptData } from "../../helpers/cryptoProcess";
+import VerifiedIcon from '@mui/icons-material/Verified';
 
 //Row 
 function Row(props){
@@ -19,8 +20,6 @@ function Row(props){
     const { dailyQueue } = props
     const [open,setOpen] = useState(false)
     const dispatch = useDispatch()
-
-
     const handleCancel = (userBookingID) => {
         dispatch(removeUserFromAdminQue(userBookingID))
         setOpen(false)
@@ -60,7 +59,19 @@ function Row(props){
                 <TableCell align='left' component="th" scope="row" sx={{padding:0,fontWeight:'bold'}}>
                 {dailyQueue.indexOf(row) + 1}
                 </TableCell>
-                <TableCell align="center" sx={{padding:1}}>{row.name}</TableCell>
+                <TableCell align="center">  
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.25 }}>
+                        {row.name}
+                        {row.isVerified && (
+                        <VerifiedIcon 
+                            sx={{ 
+                            fontSize: '1rem',
+                            color: 'primary.main'
+                            }}
+                        />
+                        )}
+                    </Box>
+                </TableCell>
                 <TableCell align="center" sx={{padding:1}}>{row.phoneNumber}</TableCell>
                 <TableCell align="center" sx={{padding:0}}>{row.comingWith}</TableCell>
             </TableRow>

@@ -63,7 +63,8 @@ export const adminDayBookingSlice = createSlice({
                 phoneNumber:action.payload.phoneNumber,
                 comingWith:action.payload.comingWith,
                 userBookingID:action.payload.userBookingID,
-                shownDate:action.payload.shownDate
+                shownDate:action.payload.shownDate,
+                isVerified: action.payload.isVerified
             })
         },
         cancelUserFromAdminQue : (state,action) => {

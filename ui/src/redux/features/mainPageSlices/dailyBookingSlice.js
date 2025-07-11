@@ -38,7 +38,8 @@ export const dailyBookingSlice = createSlice({
                 service:action.payload.service,
                 comingWith:action.payload.comingWith,
                 userBookingID:action.payload.userBookingID,
-                phoneNumber: encryptData(action.payload.phoneNumber)
+                phoneNumber: encryptData(action.payload.phoneNumber),
+                isVerified: action.payload.isVerified
             })
         },
         resetDailyQueue : (state) => {
