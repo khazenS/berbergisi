@@ -54,7 +54,7 @@ export default function LineTable(){
     if(dailyQue){
     return (
         <div style={{
-          backgroundImage: 'url("gisi_transparent.png")',
+          backgroundImage: 'url("jqs_transparent.png")',
           backgroundSize: "contain", 
           backgroundPosition: "center",
           backgroundRepeat:'no-repeat', 

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { createAdminDefault, createShopDefault } = require("../helpers/createDefault");
+const { createAdminDefault, createShopDefault } = require("../helpers/createDefaults.js");
 
 
 const dbConnection = () => {
