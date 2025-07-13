@@ -1,115 +1,72 @@
-# How to Setup
-- First of all, you need to download Node.js and have a MongoDB account for database
-- You should have your own database url to look like that but replace <db_password> with the password for the admin database user:
+# Jet Queue System ( JQS ) <-> MERN Stack Project
+This app facilitates life of costumers and barber shop owner. Costumers enroll and look at the queue as clearly and easily. Shop ownner has a lot of feature on admin panel.
+
+## 🚀 Admin Panel Features
+- You can close/open shop manually and automatically.
+- You can manipulate queue that processes are fast-call,cancel,finish-cut,up-down move.
+- You can see and analyze your stats that daily,weekly,monthly.
+- You can get notification about queue when permissions are granted.
+<img width="200" height="433" alt="admin1" src="https://github.com/user-attachments/assets/3967e6a5-1e68-41b3-9eaf-9437e59e8b72" />
+<img width="200" height="433" alt="Admin4" src="https://github.com/user-attachments/assets/6644cf02-811d-40d4-bb62-240aa8e42615" />
+<img width="200" height="433" alt="Admin2" src="https://github.com/user-attachments/assets/1fadcecf-7997-46ba-8272-925d6d516232" />
+<img width="200" height="433" alt="Admin3" src="https://github.com/user-attachments/assets/dc4ec089-1466-415e-9cf2-3c055bb8db6c" />
+
+
+## 🚀 Costumer Page Features
+- You can look at queue clearly and enroll it. When your turn was came , you will be called by the shop owner.
+- Verify yourself! You can enroll the queue more easily.
+<img width="200" height="432" alt="main1" src="https://github.com/user-attachments/assets/636166b6-b7e1-4204-82e4-e5eab2de9e5d" />
+<img width="200" height="432" alt="main2" src="https://github.com/user-attachments/assets/bee91ce7-fcbf-4348-9e71-4e45de42c325" />
+
+
+# ⚙️ How to Setup
+- First of all, you need to download Node.js and have a MongoDB account for database.
+- The setup has 2 side server and client.
+  
+### ⚙️ Server Side Setup
+- You need to type a database name to server/database/dbConnection.js
+- We are going to set .env file.
 ```sh
-mongodb+srv://admin:<db_password>@cluster0.qdped.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+DB_URL=yourDatabaseUrl
+PORT=3001
+ENCRYPTION_DECRYPTION_KEY=yourCryptoKey
+JWT_SECRET_QUE=queJWTsecret
+VAPID_PUBLIC_KEY=vapidPublic
+VAPID_PRIVATE_KEY=vapidPrivate
+RECAPTCHA_SECRET_KEY=recaptcha
+JWT_SECRET_VERIFIED_USER=verifiedUserJWTsecret  
 ```
-- After download all files in github repo , we need to download our dependencies
+Get your DB URL from MongoDB , PORT is 3001 as default , create VAPID keys for web push notification , reCAPTCHA key from Google Cloud.
+After all of that you can determine crypto and jwt keys whatever you want.
+
+### ⚙️ Client Side Setup
+- We are going to set .env file.
+```sh
+REACT_APP_ENCRYPTION_DECRYPTION_KEY=yourCryptoKey
+REACT_APP_SERVER_URL=http://localhost:3001/api/
+REACT_APP_JWT_SECRET_QUE=queJWTsecret
+REACT_APP_VAPID_PUBLIC=vapidPublic
+REACT_APP_RECAPTCHA_SITE_KEY=recaptcha
+```
+Copy + Paste keys from server/.env except reCAPTCHA site that is another key from Google Cloud.
+
+### 🌐 Start App
+- Client works on 3000 port as a default and server works on 3001.
+- We install our node modules and start for ui.
 ```sh
 cd ui
-npm i
-```
-```sh
-cd server
-npm i
-```
-- Now change the enviorement settings
-
-![image](https://github.com/user-attachments/assets/343b56b5-3c18-4a3e-98c9-208b1ce6be0f)
-
- Change database URL with MongoDB url.PORT for empty port for server.JWT_SECRET and JWT_SECRET_QUE are passwords a kind of token. ENCRYPTION_DECRYPTION_KEY for crypro password which is matching ui server ENCRYPTION_DECRYPTION_KEY 
-
- ![image](https://github.com/user-attachments/assets/5cecce4c-917d-4345-8ef7-d71d76f254d5)
-
- REACT_APP_ENCRYPTION_DECRYPTION_KEY is matching with server ENCRYPTION_DECRYPTION_KEY as a same password then have a REACT_APP_SERVER_URL variable as server url and  plus '/api/'
-
-- Before initialize , we have just last thing that is adding Shop and Admin database as a manually. I did not do register page or put a if block for generating Shop and Admin database collection because we need that just once and i  dont want to occupy the any place so lets enter the MongeDB and create a database as name of 'barberDatabase' and then create collections have name of 'Shop' and 'Admin' then insert a document for both;
-
-```sh
-username : 'admin' (String)
-password: 'admin' (String)
-adminAccessToken : null (String)
-```
-> !Note : if you want you can assign different username and password
-
-```sh
-shopID : 1 (Number)
-shopStatus : false (Boolean)
-cutPrice : 200 (Number)
-cutBPrice : 250 (Number)
-showMessage : null
-```
- - Now lets start the project with
- 
-UI ;
-```sh
+npm i 
 npm start
 ```
-SERVER ;
+- We install our node modules and start for server.
 ```sh
+cd server
+npm i 
 npm run start
 ```
+- Enter 'http://localhost:3000/#/adminLogin' this url and type 'admin' for username and password.
+- Now, you need to add new service from 'Hizmet ekle-çıkar' button.
+- After that the app completely ready for use.
 
-
-# What is this app?
-This app solves queue problem in real life. Some business may have a lot of customer and they reach to business with call there is no time for that because some days workers have to work hard.
-Of course this app solves a lot of things like a  transparent looks of queue , some costumers care about open and transparent queue line.They want to see their name in a queue.
-Actually this app provide features for business owner. Closing shop whenever wants , manipulating the queue line , call costumer as fast , add new user to lin as fast , raise the price of services and discount the price of services for data storage.Of course, this app keep a lot of data for business owner for example daily-weekly-monthly-yearly income, how many cut finished as daily and weekly. Last important this  is that i used socket for this project so processes works as a asynchronous for all devices.
-
-# How is it looks?
-
-### Main Page
-- When shop owner opened the day queue
-  <br><br><br>
-![image](https://github.com/user-attachments/assets/6db8ebc9-a8b1-4850-86c5-0a46255f2c7f)
-![image](https://github.com/user-attachments/assets/0ca8b4d0-1d05-4f17-9f63-af3259ef2897)
- <br><br><br>
-- When shop owner closed the day queue
-  <br><br><br>
-![image](https://github.com/user-attachments/assets/d58aab27-9620-4a67-bb23-b7320b9eb7f6)
- <br><br><br>
-
- ### Admin Page
-
- - First go 'http://localhost:3000/admin' page for login the admin page. If you have valid admin token for entry you will access the admin page , you dont have you will navigate to 'http://localhost:3000/adminLogin' automatically and you need to write your username and password.
-
-   adminLogin page ;
-
-   ![image](https://github.com/user-attachments/assets/43c4db77-3276-4e80-a4ba-dba276a70aae)
-
-<br><br><br>
-
-- This is looking of admin panel
-
-![image](https://github.com/user-attachments/assets/b7500320-ba2e-433f-8bb4-868565748068)
-![image](https://github.com/user-attachments/assets/c429e7fa-0aaf-494c-a9d8-c365d2db04c3)
-
-
-# Features of admin panel
-
-- You can close and open your shop for costumer entry. 
-
-![image](https://github.com/user-attachments/assets/0c96ea84-44ad-4789-93e2-e61fdbb4cf46)
-![image](https://github.com/user-attachments/assets/af07a435-2f02-4005-81b2-942c77fb8a41)
-
-- If shop was open , you can fast call to user , cancel the user order , cut finished button remove user but it effects the shop stats was shown , manupulate the order line
-
-  ![image](https://github.com/user-attachments/assets/8ad802cb-56ea-4c4e-ad90-fb1dfec424be)
-
-- There are also fast operations for shop worker. If you know the costumer and the costumer dont want to take order for a reason you can also add the costumer on here he has no phone number on admin panel.And also you can increase or decrease income for stats
-
-  ![image](https://github.com/user-attachments/assets/a4559a42-fd26-4e65-a71b-46eacf193651)
-
-- Shop settings section has raise price of services or discount price of services and publishing an announcement.
-
-![image](https://github.com/user-attachments/assets/82a3dfc0-856c-4ed5-8237-9b665f981c47)
-
-> The announcement is looking like that on main page:
-
-![image](https://github.com/user-attachments/assets/beae9d62-2f6b-4b44-8a86-9d2048044df1)
-
-- Getting stats of the shop
-
-![image](https://github.com/user-attachments/assets/8d98caec-ceb8-47e7-aac6-933340b848c2)
 
 
